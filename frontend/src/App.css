@@ -1,0 +1,120 @@
+/* Reset cơ bản */
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background-color: #f4f4f4; /* Màu nền xám nhạt giống Futa */
+}
+
+/* Biến màu chính (color variables) */
+:root {
+  --futa-orange: #f26522;
+  --futa-dark-orange: #d95a1e;
+}
+
+/* Lớp bọc toàn bộ ứng dụng */
+.app {
+  width: 100%;
+}
+
+/* === 1. Style cho Header === */
+.header {
+  display: flex;
+  justify-content: space-around; /* Căn chỉnh các mục */
+  align-items: center;
+  background-color: white;
+  padding: 10px 20px;
+  border-bottom: 2px solid var(--futa-orange);
+}
+
+.header-logo {
+  font-size: 24px;
+  font-weight: bold;
+  color: var(--futa-orange);
+}
+
+.header-nav {
+  list-style: none;
+  display: flex;
+  gap: 20px; /* Khoảng cách giữa các mục menu */
+  margin: 0;
+}
+
+.header-nav li {
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.login-button {
+  background-color: var(--futa-orange);
+  color: white;
+  border: none;
+  padding: 10px 15px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.login-button:hover {
+  background-color: var(--futa-dark-orange);
+}
+
+
+/* === 2. Style cho Booking Form === */
+.booking-container {
+  /* Dùng hình nền (giả lập) cho giống */
+  background-image: url('https://storage.googleapis.com/futa-busline-cms-upload/futa_bg_140d1a4e10/futa_bg_140d1a4e10.svg');
+  background-size: cover;
+  background-position: center;
+  padding: 50px 20px;
+  display: flex;
+  justify-content: center; /* Đưa form vào giữa */
+}
+
+.booking-form {
+  background-color: white;
+  padding: 25px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  max-width: 400px; /* Giới hạn chiều rộng */
+}
+
+.booking-form h3 {
+  text-align: center;
+  color: var(--futa-orange);
+  margin-top: 0;
+}
+
+.form-group {
+  margin-bottom: 15px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: bold;
+  color: #333;
+}
+
+.form-group input {
+  width: calc(100% - 20px); /* 100% trừ padding */
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+}
+
+.find-ticket-btn {
+  width: 100%;
+  padding: 12px;
+  background-color: var(--futa-orange);
+  color: white;
+  border: none;
+  border-radius: 5px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.find-ticket-btn:hover {
+  background-color: var(--futa-dark-orange);
+}
