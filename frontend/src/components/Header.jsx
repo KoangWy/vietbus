@@ -1,9 +1,13 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const Header = () => {
+  const navigate = useNavigate();
+
   return (
     <nav className="header">
-      <div className="header-logo">
+      {/* Bấm vào logo để về Trang chủ */}
+      <div className="header-logo" onClick={() => navigate('/')} style={{cursor: 'pointer'}}>
         {/* dùng text làm logo */}
         FUTABUS
       </div>
@@ -12,7 +16,10 @@ const Header = () => {
         <li>Schedule</li>
         <li>Lookup</li>
       </ul>
-      <button className="login-button">Login</button>
+      {/* Nút đăng nhập chuyển hướng sang trang /login */}
+      <button className="login-button" onClick={() => navigate('/login')}>
+        Login
+      </button>
     </nav>
   );
 };
