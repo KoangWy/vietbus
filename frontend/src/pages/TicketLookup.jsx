@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import Header from '../components/Header';
+import Footer from '../components/Footer';
+import '../App.css';
 
 export default function TicketLookup() {
     const [formData, setFormData] = useState({
@@ -218,6 +220,7 @@ export default function TicketLookup() {
                     </div>
                 </div>
             )}
+            <Footer />
         </>
     );
 }

@@ -1,5 +1,7 @@
 import React from 'react';
 import Header from '../components/Header';
+import Footer from '../components/Footer';
+import '../App.css';
 
 export default function Homepage() {
     return (
@@ -20,19 +22,8 @@ export default function Homepage() {
                 </section>
             </main>
 
-            <footer style={{ textAlign: 'center', padding: '24px 0', borderTop: '1px solid #eee', color: '#666' }}>
-                © {new Date().getFullYear()} Futabus
-            </footer>
+            <Footer />
         </>
-    );
-}
-
-function Feature({ title, description }) {
-    return (
-        <div style={{ padding: 16, border: '1px solid #f0f0f0', borderRadius: 8, background: '#fff' }}>
-            <h3 style={{ margin: '0 0 8px' }}>{title}</h3>
-            <p style={{ margin: 0, color: '#555' }}>{description}</p>
-        </div>
     );
 }
 
