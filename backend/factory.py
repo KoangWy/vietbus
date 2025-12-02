@@ -5,7 +5,7 @@ Provides the create_app function that builds and configures the Flask app.
 from __future__ import annotations
 
 from flask import Flask, jsonify
-
+from flask_cors import CORS
 from routes.admin import admin_bp
 
 class DefaultConfig:
@@ -30,7 +30,7 @@ def register_error_handlers(app: Flask) -> None:
 
 def create_app(config_object: object | None = None) -> Flask:
     app = Flask(__name__)
-
+    CORS(app, resources={r"/*": {"origins": "*"}})  
     # Load config: provided object or fallback DefaultConfig
     app.config.from_object(config_object or DefaultConfig)
 
