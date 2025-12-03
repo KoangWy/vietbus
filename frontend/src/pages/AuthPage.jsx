@@ -144,7 +144,7 @@ export default function AuthPage() {
                         <input 
                             name="full_name" 
                             type="text" 
-                            placeholder="Ex: John Doe" 
+                            placeholder="Ex: Nguyen Xuan Dat" 
                             onChange={handleChange} 
                         />
                         {errors.full_name && <span className="error">{errors.full_name}</span>}
@@ -155,7 +155,7 @@ export default function AuthPage() {
                             <input 
                                 name="gov_id_number" 
                                 type="text" 
-                                placeholder="Ex: 079096000001"
+                                placeholder="Ex: 0123456789"
                                 onChange={handleChange} 
                             />
                             {errors.gov_id_number && <span className="error">{errors.gov_id_number}</span>}
@@ -190,7 +190,7 @@ export default function AuthPage() {
                     <input 
                         name="phone" 
                         type="text" 
-                        placeholder="Ex: 0909123456"
+                        placeholder="Ex: 0912345678"
                         onChange={handleChange} 
                     />
                     {errors.phone && <span className="error">{errors.phone}</span>}
