@@ -184,8 +184,8 @@ export default function TicketLookup() {
                                     <span className="info-value">{ticketInfo.route.departure_station}</span>
                                 </div>
                                 <div className="info-row">
-                                    <span className="info-label">Trạm đích đến:</span>
-                                    <span className="info-value">{ticketInfo.route.arrival_station}</span>
+                                    <span className="info-label">Thành phố:</span>
+                                    <span className="info-value">{ticketInfo.route.departure_city}, {ticketInfo.route.departure_province}</span>
                                 </div>
                                 <div className="info-row">
                                     <span className="info-label">Quãng đường:</span>
