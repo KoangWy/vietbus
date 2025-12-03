@@ -1272,6 +1272,99 @@ def create_fare():
         cursor.close()
         conn.close()
 
+@admin_bp.route("/fares/<int:fare_id>", methods=["PATCH"])
+def patch_fare(fare_id):
+    data = request.get_json(silent=True) or {}
+
+    allowed_fields = {
+        "currency",
+        "discount",
+        "valid_from",
+        "valid_to",
+        "taxes",
+        "route_id",
+        "surcharges",
+        "base_fare",
+        "seat_price",
+        "seat_class",
+    }
+
+    updates = {k: v for k, v in data.items() if k in allowed_fields}
+    if not updates:
+        return jsonify({"error": "no_valid_fields"}), 400
+
+    # Validate and normalize numeric fields if present
+    try:
+        if "route_id" in updates and updates["route_id"] is not None:
+            updates["route_id"] = int(updates["route_id"])
+        if "base_fare" in updates and updates["base_fare"] is not None:
+            updates["base_fare"] = float(updates["base_fare"])
+        if "seat_price" in updates and updates["seat_price"] is not None:
+            updates["seat_price"] = float(updates["seat_price"])
+        if "discount" in updates and updates["discount"] is not None:
+            updates["discount"] = float(updates["discount"])
+        if "taxes" in updates and updates["taxes"] is not None:
+            updates["taxes"] = float(updates["taxes"])
+        if "surcharges" in updates and updates["surcharges"] is not None:
+            updates["surcharges"] = float(updates["surcharges"])
+    except (TypeError, ValueError):
+        return jsonify({"error": "invalid_numeric_values"}), 400
+
+    # Validate seat_class if present (mirror POST policy)
+    if "seat_class" in updates and updates["seat_class"] is not None:
+        allowed_classes = {"VIP", "Standard", "Economy"}
+        if str(updates["seat_class"]) not in allowed_classes:
+            return jsonify({
+                "error": "invalid_seat_class",
+                "allowed": sorted(list(allowed_classes))
+            }), 400
+
+
+    conn = db_connection()
+    cursor = conn.cursor(dictionary=True)
+    try:
+        # Ensure fare exists
+        cursor.execute("SELECT 1 FROM fare WHERE fare_id = %s", (fare_id,))
+        if cursor.fetchone() is None:
+            return jsonify({"error": "fare_not_found"}), 404
+
+        # If updating route_id, ensure referenced route exists
+        if "route_id" in updates:
+            cursor.execute("SELECT 1 FROM routetrip WHERE route_id = %s", (updates["route_id"],))
+            if cursor.fetchone() is None:
+                return jsonify({"error": "route_not_found"}), 404
+
+        set_clause = ", ".join(f"{k} = %s" for k in updates.keys())
+        values = list(updates.values()) + [fare_id]
+        cursor.execute(f"UPDATE fare SET {set_clause} WHERE fare_id = %s", values)
+        conn.commit()
+
+        cursor.execute(
+            """
+            SELECT fare_id, currency, discount, valid_from, valid_to,
+                   taxes, route_id, surcharges, base_fare, seat_price, seat_class
+            FROM fare
+            WHERE fare_id = %s
+            """,
+            (fare_id,),
+        )
+        fare = cursor.fetchone()
+
+        return jsonify({
+            "status": "updated",
+            "fare_id": fare_id,
+            "updated_fields": list(updates.keys()),
+            "fare": fare,
+        }), 200
+
+    except Exception as e:
+        conn.rollback()
+        current_app.logger.exception(e)
+        return jsonify({"error": "internal_server_error", "details": str(e)}), 500
+    finally:
+        cursor.close()
+        conn.close()
+
 @admin_bp.route("/tickets", methods=["GET"])
 def get_tickets():
     account_id = request.args.get("account_id", type=int)

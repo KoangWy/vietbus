@@ -1,4 +1,3 @@
-// src/components/UniversalCRUDModal.jsx
 import { useEffect, useState } from "react";
 import { toDateTimeLocal, toBackendDateTime } from "../utils/date";
 
@@ -15,9 +14,9 @@ export default function UniversalCRUDModal({
 }) {
   const [form, setForm] = useState({});
 
-  // ---------------------------
-  // Initialize form (ADD / EDIT)
-  // ---------------------------
+  // ==========================================================
+  // Init form (ADD or EDIT)
+  // ==========================================================
   useEffect(() => {
     if (!open) return;
 
@@ -27,17 +26,31 @@ export default function UniversalCRUDModal({
       fields.forEach((f) => {
         let v = data[f.key];
 
-        // convert datetime for input
+        // Convert datetime-local fields
         if (f.type === "datetime-local") {
           v = toDateTimeLocal(v);
+        }
+
+        // Convert date-only fields → YYYY-MM-DD
+        if (f.type === "date") {
+          let parsed = "";
+          if (v) {
+            const d = new Date(v);
+            if (!isNaN(d.getTime())) {
+              const pad = (n) => String(n).padStart(2, "0");
+              const yyyy = d.getFullYear();
+              const mm = pad(d.getMonth() + 1);
+              const dd = pad(d.getDate());
+              parsed = `${yyyy}-${mm}-${dd}`;
+            }
+          }
+          v = parsed;
         }
 
         init[f.key] = v ?? "";
       });
     } else {
-      fields.forEach((f) => {
-        init[f.key] = "";
-      });
+      fields.forEach((f) => (init[f.key] = ""));
     }
 
     setForm(init);
@@ -45,17 +58,15 @@ export default function UniversalCRUDModal({
 
   if (!open) return null;
 
-  // ---------------------------
-  // Save handler
-  // ---------------------------
+  // ==========================================================
+  // SAVE handler
+  // ==========================================================
   async function handleSave() {
     const idField = fields.find((f) => f.isId);
     const id = idField && data ? data[idField.key] : null;
 
-    const url = mode === "edit"
-      ? `${apiBase}/${api}/${id}`
-      : `${apiBase}/${api}`;
-
+    const url =
+      mode === "edit" ? `${apiBase}/${api}/${id}` : `${apiBase}/${api}`;
     const method = mode === "edit" ? "PATCH" : "POST";
 
     const payload = {};
@@ -66,11 +77,12 @@ export default function UniversalCRUDModal({
       const val = form[f.key];
       if (val === "" || val == null) return;
 
-      // Convert datetime-local to "YYYY-MM-DD HH:MM:SS"
       if (f.type === "datetime-local") {
-        payload[f.key] = toBackendDateTime(val);
+        payload[f.key] = toBackendDateTime(val); // yyyy-mm-dd hh:mm:ss
+      } else if (f.type === "date") {
+        payload[f.key] = val; // yyyy-mm-dd
       } else {
-        payload[f.key] = val;
+        payload[f.key] = val; // raw
       }
     });
 
@@ -95,74 +107,80 @@ export default function UniversalCRUDModal({
     }
   }
 
-  // ---------------------------
-  // FIELD RENDERING
-  // ---------------------------
+  // ==========================================================
+  // FIELD RENDERER
+  // ==========================================================
   function renderField(f) {
     const value = form[f.key] ?? "";
 
-    // SELECT
+    // ------ SELECT ------
     if (f.type === "select") {
       return (
         <select
           className="modal__input"
           value={value}
-          onChange={(e) =>
-            setForm({ ...form, [f.key]: e.target.value })
-          }
+          onChange={(e) => setForm({ ...form, [f.key]: e.target.value })}
         >
           <option value="">-- select --</option>
           {f.options?.map((o) => (
-            <option key={o} value={o}>{o}</option>
+            <option key={o} value={o}>
+              {o}
+            </option>
           ))}
         </select>
       );
     }
 
-    // TEXTAREA
+    // ------ TEXTAREA ------
     if (f.type === "textarea") {
       return (
         <textarea
           className="modal__input modal__input--textarea"
           value={value}
-          onChange={(e) =>
-            setForm({ ...form, [f.key]: e.target.value })
-          }
+          onChange={(e) => setForm({ ...form, [f.key]: e.target.value })}
         />
       );
     }
 
-    // DATETIME-LOCAL (calendar + time picker)
+    // ------ DATE PICKER (YYYY-MM-DD) ------
+    if (f.type === "date") {
+      return (
+        <input
+          type="date"
+          className="modal__input"
+          value={value || ""}
+          onChange={(e) => setForm({ ...form, [f.key]: e.target.value })}
+        />
+      );
+    }
+
+    // ------ DATETIME-LOCAL PICKER ------
     if (f.type === "datetime-local") {
       return (
         <input
           type="datetime-local"
           className="modal__input"
-          value={value}
-          onChange={(e) =>
-            setForm({ ...form, [f.key]: e.target.value })
-          }
+          value={value || ""}
+          onChange={(e) => setForm({ ...form, [f.key]: e.target.value })}
         />
       );
     }
 
-    // DEFAULT INPUT
+    // ------ DEFAULT TEXT INPUT ------
     return (
       <input
         type={f.type || "text"}
         disabled={f.readonly}
         className="modal__input"
         value={value}
-        onChange={(e) =>
-          setForm({ ...form, [f.key]: e.target.value })
-        }
+        onChange={(e) => setForm({ ...form, [f.key]: e.target.value })}
       />
     );
   }
 
-  // ---------------------------
+  // ==========================================================
   // RENDER MODAL
-  // ---------------------------
+  // ==========================================================
   return (
     <div className="modal-backdrop">
       <div className="modal modal--scroll">
@@ -172,10 +190,12 @@ export default function UniversalCRUDModal({
           <h2 className="modal__title">
             {mode === "add" ? "Add" : "Edit"} {title}
           </h2>
-          <button className="modal__close" onClick={onClose}>×</button>
+          <button className="modal__close" onClick={onClose}>
+            ×
+          </button>
         </div>
 
-        {/* SCROLLING BODY */}
+        {/* BODY (scrollable) */}
         <div className="modal__body modal__body--scroll">
           {fields.map((f) => (
             <div className="modal__field" key={f.key}>
@@ -185,7 +205,7 @@ export default function UniversalCRUDModal({
           ))}
         </div>
 
-        {/* FIXED FOOTER */}
+        {/* FOOTER (fixed) */}
         <div className="modal__footer">
           <button className="btn btn--ghost btn--sm" onClick={onClose}>
             Cancel
