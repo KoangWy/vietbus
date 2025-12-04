@@ -1076,36 +1076,6 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   gap: 20px;
 }
 
-.mini-search-form {
-  display: flex;
-  gap: 15px;
-  align-items: center;
-}
-
-.control-group label {
-  font-size: 12px;
-  font-weight: bold;
-  color: #888;
-  margin-right: 5px;
-}
-
-.mini-search-form select, 
-.mini-search-form input {
-  padding: 8px 12px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-}
-
-.btn-search-small {
-  background: var(--futa-orange);
-  color: white;
-  border: none;
-  padding: 9px 20px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-weight: bold;
-}
-
 .filters-inline {
   display: flex;
   align-items: center;
@@ -1281,6 +1251,95 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   background: #fff;
   border-radius: 8px;
   color: #777;
+}
+
+/* Enhanced schedule search widget */
+.schedule-search-widget {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  background: #fff;
+  border: 1px solid #e6e6e6;
+  border-radius: 14px;
+  padding: 14px 20px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.06);
+  min-width: 280px;
+}
+
+.schedule-search-field {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #f7f7f7;
+  border-radius: 10px;
+  padding: 10px 14px;
+  border: 2px solid transparent;
+}
+
+.schedule-search-field:focus-within {
+  border-color: var(--futa-orange);
+  background: #fff;
+}
+
+.schedule-search-group {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.schedule-search-group label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #7a7a7a;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.schedule-search-group select,
+.schedule-search-group input {
+  border: none;
+  background: transparent;
+  font-size: 15px;
+  font-weight: 600;
+  color: #333;
+  outline: none;
+}
+
+.schedule-search-group select option {
+  color: #333;
+}
+
+.schedule-search-icon {
+  font-size: 20px;
+  color: #9d9d9d;
+}
+
+.schedule-search-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--futa-orange);
+  color: #fff;
+  border: none;
+  padding: 0 24px;
+  height: 60px;
+  border-radius: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.3s ease, transform 0.2s ease;
+}
+
+.schedule-search-btn:hover:not(:disabled) {
+  background: var(--futa-dark-orange);
+  transform: translateY(-1px);
+}
+
+.schedule-search-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 /* RESPONSIVE */

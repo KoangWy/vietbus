@@ -1,22 +1,25 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import Header from '../components/layout/Header';
 import Footer from '../components/layout/Footer';
-import { stationOptions, tripData } from '../data/mockTrips'; // Ensure the path stays correct
-import { FiNavigation } from 'react-icons/fi'; // Icons
+import TripCard from '../components/features/TripCard';
+import ScheduleSearchBar from '../components/features/ScheduleSearchBar';
 import '../App.css';
 
+const API_BASE_URL = 'http://127.0.0.1:5000/api/schedule';
+
 export default function SchedulePage() {
-    const defaultStation = stationOptions[0]?.station_id ?? '';
-    const [stations] = useState(stationOptions);
+    const initialDate = useMemo(() => new Date().toISOString().split('T')[0], []);
+    const [stations, setStations] = useState([]);
+    const [stationsLoading, setStationsLoading] = useState(true);
     const [searchParams, setSearchParams] = useState({
-        station_id: defaultStation,
-        date: new Date().toISOString().split('T')[0]
+        station_id: '',
+        date: initialDate,
     });
     
     // Store search results
     const [trips, setTrips] = useState([]);
     const [loading, setLoading] = useState(false);
-    const [hasSearched, setHasSearched] = useState(false);
+    const [errorMessage, setErrorMessage] = useState('');
 
     // Filter state
     const [filters, setFilters] = useState({
@@ -24,31 +27,76 @@ export default function SchedulePage() {
         sortBy: 'time',
     });
 
-    // Mock search handler
-    const performSearch = (stationId) => {
-        if (!stationId) return;
-        setLoading(true);
-        setHasSearched(true);
-        
-        // Simulate a short network delay (500ms)
-        setTimeout(() => {
-            const filtered = tripData.filter((trip) => trip.station_id == stationId);
-            setTrips(filtered);
-            setLoading(false);
-        }, 500);
-    };
-
-    // Run initial search when the page loads
-    useEffect(() => {
-        if (defaultStation) {
-            performSearch(defaultStation);
+    // Fetch trips from backend
+    const performSearch = useCallback(async (stationId, date) => {
+        if (!stationId || !date) {
+            return;
         }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
+        setLoading(true);
+        setErrorMessage('');
+        try {
+            const params = new URLSearchParams({ station_id: stationId, date });
+            const response = await fetch(`${API_BASE_URL}/trips?${params.toString()}`);
+            if (!response.ok) {
+                throw new Error('Failed to load trips');
+            }
+            const payload = await response.json();
+            setTrips(payload.data ?? []);
+        } catch (error) {
+            console.error('Unable to fetch trips', error);
+            setTrips([]);
+            setErrorMessage('Unable to load trips. Please try again.');
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    // Load stations on mount
+    useEffect(() => {
+        const fetchStations = async () => {
+            setStationsLoading(true);
+            try {
+                const response = await fetch(`${API_BASE_URL}/stations`);
+                if (!response.ok) {
+                    throw new Error('Failed to load stations');
+                }
+                const payload = await response.json();
+                const list = payload.data ?? [];
+                setStations(list);
+
+                const fallbackStation = list[0]?.station_id;
+                if (fallbackStation) {
+                    let targetStation = fallbackStation;
+                    setSearchParams((prev) => {
+                        if (prev.station_id) {
+                            targetStation = prev.station_id;
+                            return prev;
+                        }
+                        return { ...prev, station_id: fallbackStation };
+                    });
+                    await performSearch(targetStation, initialDate);
+                }
+            } catch (error) {
+                console.error('Unable to fetch stations', error);
+                setErrorMessage('Unable to load stations. Please refresh the page.');
+            } finally {
+                setStationsLoading(false);
+            }
+        };
+
+        fetchStations();
+    }, [performSearch, initialDate]);
+
+    const handleParamChange = useCallback((field, value) => {
+        setSearchParams((prev) => ({ ...prev, [field]: value }));
     }, []);
 
     const handleSearch = (e) => {
-        e.preventDefault();
-        performSearch(searchParams.station_id);
+        if (e && typeof e.preventDefault === 'function') {
+            e.preventDefault();
+        }
+        performSearch(searchParams.station_id, searchParams.date);
     };
 
     const formatCurrency = (val) => {
@@ -80,31 +128,14 @@ export default function SchedulePage() {
                 {/* 1. SEARCH BAR & FILTERS (Sticky Header) */}
                 <div className="schedule-header">
                     <div className="container schedule-controls">
-                        {/* Compact search form */}
-                        <form onSubmit={handleSearch} className="mini-search-form">
-                            <div className="control-group">
-                                <label>Departure</label>
-                                <select 
-                                    value={searchParams.station_id}
-                                    onChange={(e) => setSearchParams({...searchParams, station_id: e.target.value})}
-                                >
-                                    {stations.map(st => (
-                                        <option key={st.station_id} value={st.station_id}>
-                                            {st.city} - {st.station_name}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-                            <div className="control-group">
-                                <label>Travel date</label>
-                                <input 
-                                    type="date" 
-                                    value={searchParams.date}
-                                    onChange={(e) => setSearchParams({...searchParams, date: e.target.value})}
-                                />
-                            </div>
-                            <button type="submit" className="btn-search-small">Search trips</button>
-                        </form>
+                        <ScheduleSearchBar
+                            stations={stations}
+                            searchParams={searchParams}
+                            onParamsChange={handleParamChange}
+                            onSubmit={handleSearch}
+                            loading={loading}
+                            stationsLoading={stationsLoading}
+                        />
 
                         {/* Quick filters */}
                         <div className="filters-inline">
@@ -135,6 +166,8 @@ export default function SchedulePage() {
                     <div className="results-status">
                         {loading ? (
                             <p>Loading data...</p>
+                        ) : errorMessage ? (
+                            <p>{errorMessage}</p>
                         ) : (
                             <p>Found <strong>{filteredTrips.length}</strong> matching trips</p>
                         )}
@@ -144,43 +177,12 @@ export default function SchedulePage() {
                         {filteredTrips.map((trip) => {
                             const available = trip.available_seats ?? 0;
                             return (
-                                <div key={trip.trip_id} className="trip-item-card">
-                                    {/* Column 1: Operator information & timing */}
-                                    <div className="card-left">
-                                        <div className="trip-time-box">
-                                            <div className="time-point">
-                                                <span className="hour">{trip.time_start}</span>
-                                                <span className="place">{trip.station_name}</span>
-                                            </div>
-                                            <div className="duration-line">
-                                                <span className="dot-start"></span>
-                                                <span className="line"></span>
-                                                <span className="duration-text">{trip.duration}</span>
-                                                <span className="dot-end"></span>
-                                                <FiNavigation className="nav-icon"/>
-                                            </div>
-                                            <div className="time-point">
-                                                <span className="hour">{trip.time_end}</span>
-                                                <span className="place">{trip.route_name}</span>
-                                            </div>
-                                        </div>
-                                        <div className="trip-vendor-info">
-                                            <span className="badge-bus">{trip.vehicle_type}</span>
-                                            <span className="vendor-name">{trip.brand_name}</span>
-                                        </div>
-                                    </div>
-
-                                    {/* Column 2: Price & CTA */}
-                                    <div className="card-right">
-                                        <div className="price-tag">
-                                            {formatCurrency(trip.price)}
-                                        </div>
-                                        <div className="seat-status">
-                                            {available} seats left
-                                        </div>
-                                        <button className="btn-choose">Choose trip</button>
-                                    </div>
-                                </div>
+                                <TripCard
+                                    key={trip.trip_id}
+                                    trip={trip}
+                                    availableSeats={available}
+                                    priceLabel={formatCurrency(trip.price)}
+                                />
                             );
                         })}
 

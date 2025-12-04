@@ -9,6 +9,7 @@ from flask_cors import CORS
 from routes.admin import admin_bp
 from routes.auth import auth_bp
 from routes.ticket import ticket_bp
+from routes.schedule import schedule_bp
 
 class DefaultConfig:
     JSON_SORT_KEYS = False
@@ -20,6 +21,7 @@ def register_blueprints(app: Flask) -> None:
     app.register_blueprint(admin_bp, url_prefix="/api/admin")
     app.register_blueprint(auth_bp, url_prefix="/api")
     app.register_blueprint(ticket_bp, url_prefix="/api/tickets")
+    app.register_blueprint(schedule_bp, url_prefix="/api/schedule")
 
 def register_error_handlers(app: Flask) -> None:
     @app.errorhandler(404)
