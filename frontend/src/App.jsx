@@ -6,6 +6,8 @@ import AuthPage from './pages/AuthPage.jsx';
 import AdminLogin from './pages/AdminLogin.jsx';
 import TicketLookup from './pages/TicketLookup.jsx';
 import SchedulePage from './pages/SchedulePage.jsx';
+import ManageTrips from './pages/ManageTrips.jsx';
+import TripDetail from './components/features/TripDetail.jsx';
 import Sidebar from "./components/Sidebar.jsx";
 import Page1 from "./pages/Page1.jsx";
 import Page2 from "./pages/Page2.jsx";
@@ -44,6 +46,12 @@ function App() {
           
           {/* Trang Lịch trình, đặt vé */}
           <Route path="/schedule" element={<SchedulePage />} />
+
+          {/* Trang chi tiết chuyến xe */}
+          <Route path="/trip/:tripId" element={<TripDetail />} />
+
+          {/* Trang Manage Trips - chỉ cho Staff */}
+          <Route path="/manage-trips" element={<ManageTrips />} />
 
           <Route
             path="/admin"

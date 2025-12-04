@@ -158,3 +158,119 @@ def list_trips():
     finally:
         cursor.close()
         conn.close()
+
+
+@schedule_bp.route("/trips/<int:trip_id>", methods=["GET"])
+def get_trip_detail(trip_id):
+    """
+    Lấy chi tiết đầy đủ của một chuyến xe theo trip_id
+    Bao gồm: thông tin tuyến đường, xe, giá vé, số ghế trống, biển số xe, ngày giờ khởi hành/đến
+    """
+    conn = db_connection()
+    cursor = conn.cursor(dictionary=True)
+    try:
+        query = """
+            SELECT
+                t.trip_id,
+                t.service_date,
+                t.arrival_datetime,
+                t.trip_status,
+                rt.route_id,
+                rt.default_duration_time,
+                rt.distance,
+                dep.station_id AS departure_station_id,
+                dep.station_name AS departure_name,
+                dep.city AS departure_city,
+                dep.address_station AS departure_address,
+                arr.station_id AS arrival_station_id,
+                arr.station_name AS arrival_name,
+                arr.city AS arrival_city,
+                arr.address_station AS arrival_address,
+                b.bus_id,
+                b.plate_number,
+                b.capacity,
+                b.vehicle_type,
+                op.operator_id,
+                op.brand_name,
+                op.legal_name,
+                COALESCE((
+                    SELECT seat_price
+                    FROM fare f
+                    WHERE f.route_id = rt.route_id
+                    ORDER BY f.valid_from DESC
+                    LIMIT 1
+                ), 0) AS seat_price,
+                fn_get_available_seats(t.trip_id) AS available_seats
+            FROM trip t
+            JOIN routetrip rt ON t.route_id = rt.route_id
+            JOIN station dep ON rt.station_id = dep.station_id
+            LEFT JOIN station arr ON rt.arrival_station = arr.station_id
+            JOIN bus b ON t.bus_id = b.bus_id
+            JOIN operator op ON rt.operator_id = op.operator_id
+            WHERE t.trip_id = %s
+        """
+        
+        cursor.execute(query, (trip_id,))
+        row = cursor.fetchone()
+        
+        if not row:
+            return jsonify({"error": "Trip not found"}), 404
+        
+        # Format dữ liệu trả về
+        route_name = row["departure_city"]
+        if row["arrival_city"]:
+            route_name = f"{route_name} -> {row['arrival_city']}"
+        
+        available = row["available_seats"]
+        
+        trip_detail = {
+            "trip_id": row["trip_id"],
+            "trip_status": row["trip_status"],
+            
+            # Thông tin tuyến đường
+            "route_id": row["route_id"],
+            "route_name": route_name,
+            "distance": row["distance"],
+            "duration": _format_duration(row["default_duration_time"]),
+            
+            # Điểm đi
+            "station_id": str(row["departure_station_id"]),
+            "station_name": row["departure_name"],
+            "city": row["departure_city"],
+            "departure_address": row["departure_address"],
+            
+            # Điểm đến
+            "arrival_station_id": str(row["arrival_station_id"]) if row["arrival_station_id"] else None,
+            "arrival_station_name": row["arrival_name"],
+            "arrival_city": row["arrival_city"],
+            "arrival_address": row["arrival_address"],
+            
+            # Thời gian
+            "service_date": row["service_date"].isoformat() if row["service_date"] else None,
+            "time_start": _format_time(row["service_date"]),
+            "arrival_datetime": row["arrival_datetime"].isoformat() if row["arrival_datetime"] else None,
+            "time_end": _format_time(row["arrival_datetime"]),
+            
+            # Thông tin xe
+            "bus_id": row["bus_id"],
+            "plate_number": row["plate_number"],
+            "vehicle_type": row["vehicle_type"],
+            "capacity": row["capacity"],
+            
+            # Nhà xe
+            "operator_id": row["operator_id"],
+            "brand_name": row["brand_name"],
+            "legal_name": row["legal_name"],
+            
+            # Giá vé và ghế
+            "price": row["seat_price"],
+            "available_seats": available if available is not None else 0,
+        }
+        
+        return jsonify({"data": trip_detail}), 200
+        
+    except Exception as exc:
+        return jsonify({"error": str(exc)}), 500
+    finally:
+        cursor.close()
+        conn.close()

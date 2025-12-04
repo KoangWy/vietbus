@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import '../../App.css';
 import { FiMapPin, FiCalendar, FiRepeat } from 'react-icons/fi';
 import TripCard from './TripCard';
@@ -6,17 +7,22 @@ import TripCard from './TripCard';
 const API_BASE_URL = 'http://127.0.0.1:5000/api/schedule';
 
 const SearchForm = () => {
+  const location = useLocation();
+  
+  // Restore state from navigation if available
+  const restoredState = location.state?.searchState;
+  
   const [stations, setStations] = useState([]);
   const [stationsLoading, setStationsLoading] = useState(true);
-  const [formValues, setFormValues] = useState(() => ({
+  const [formValues, setFormValues] = useState(restoredState?.formValues || {
     departure: '',
     destination: '',
     date: new Date().toISOString().split('T')[0],
-  }));
+  });
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
-  const [trips, setTrips] = useState([]);
-  const [hasSearched, setHasSearched] = useState(false);
+  const [trips, setTrips] = useState(restoredState?.trips || []);
+  const [hasSearched, setHasSearched] = useState(restoredState?.hasSearched || false);
 
   useEffect(() => {
     let isMounted = true;
@@ -34,6 +40,12 @@ const SearchForm = () => {
         }
         setErrorMessage('');
         setStations(list);
+        
+        // If we have restored state, don't override formValues
+        if (restoredState) {
+          return;
+        }
+        
         if (list.length > 0) {
           setFormValues((prev) => ({
             ...prev,
@@ -59,7 +71,7 @@ const SearchForm = () => {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [restoredState]);
 
   const handleFieldChange = (field) => (event) => {
     const value = event.target.value;
@@ -207,6 +219,11 @@ const SearchForm = () => {
                 trip={trip}
                 availableSeats={trip.available_seats ?? 0}
                 priceLabel={formatCurrency(trip.price)}
+                searchState={{
+                  formValues,
+                  trips,
+                  hasSearched
+                }}
               />
             ))}
           </div>

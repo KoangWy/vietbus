@@ -1,14 +1,39 @@
 import React from 'react';
 import { FiNavigation } from 'react-icons/fi';
+import { useNavigate, useLocation } from 'react-router-dom';
 
-export default function TripCard({ trip, priceLabel, availableSeats = 0, onSelect }) {
+export default function TripCard({ trip, priceLabel, availableSeats = 0, onSelect, searchState }) {
+    const navigate = useNavigate();
+    const location = useLocation();
+    
     if (!trip) {
         return null;
     }
 
     const handleSelect = () => {
+        // Kiểm tra đăng nhập trước
+        const loggedInUser = localStorage.getItem('user');
+        if (!loggedInUser) {
+            alert('Vui lòng đăng nhập để đặt vé!');
+            navigate('/login');
+            return;
+        }
+
+        // Nếu có callback onSelect từ parent, gọi nó
         if (typeof onSelect === 'function') {
             onSelect(trip);
+        } else {
+            // Xác định returnTo dựa trên location hiện tại
+            const currentPath = location.pathname;
+            const returnTo = currentPath === '/' ? '/' : '/schedule';
+            
+            // Mặc định: chuyển đến trang chi tiết trip và truyền state
+            navigate(`/trip/${trip.trip_id}`, {
+                state: {
+                    returnTo: returnTo,
+                    searchState: searchState || location.state?.searchState
+                }
+            });
         }
     };
 

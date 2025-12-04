@@ -33,6 +33,9 @@ const Header = () => {
         <li onClick={() => navigate('/')}>Homepage</li>
         <li onClick={() => navigate('/schedule')}>Schedule</li>
         <li onClick={() => navigate('/lookup')}>Lookup</li>
+        {user && user.role === 'STAFF' && (
+          <li onClick={() => navigate('/manage-trips')}>Manage Trips</li>
+        )}
       </ul>
       
       {user ? (

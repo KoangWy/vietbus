@@ -36,4 +36,5 @@ __pycache__/
 *.pyd
 
 data.sql
+mockdata.sql
 .vite
