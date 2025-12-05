@@ -1,13 +1,14 @@
-
 import React, { useEffect, useState } from "react";
+import { getAuthHeaders } from "../utils/auth";
 
 const STATUS_OPTIONS = ["Active", "Inactive", "Suspended"];
 
 export default function AccountDetailModal({
   open,
-  type,        // 'passenger' | 'staff'
-  id,          // passenger_id hoặc staff_id
-  apiBase,     // ví dụ: "http://localhost:5000/admin"
+  type, // 'passenger' | 'staff'
+  id, // passenger_id hoặc staff_id
+  apiBase, // ví dụ: "http://localhost:5000/admin"
+  authHeaders,
   onClose,
 }) {
   const [info, setInfo] = useState(null);
@@ -15,6 +16,8 @@ export default function AccountDetailModal({
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
+
+  const mergedHeaders = authHeaders || getAuthHeaders();
 
   // fetch account-info khi mở modal
   useEffect(() => {
@@ -31,13 +34,13 @@ export default function AccountDetailModal({
             ? `${apiBase}/passengers/${id}/account-info`
             : `${apiBase}/staffs/${id}/account-info`;
 
-        const res = await fetch(url);
+        const res = await fetch(url, { headers: mergedHeaders });
         if (!res.ok) {
           throw new Error("Không lấy được account info");
         }
         const data = await res.json();
         setInfo(data);
-        // backend trả 'stat' nên mình map sang status
+        // backend trả 'stat' nên map sang status
         setStatus(data.stat || data.status || "");
       } catch (err) {
         setError(err.message || "Đã có lỗi xảy ra");
@@ -61,7 +64,7 @@ export default function AccountDetailModal({
 
       const res = await fetch(url, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers: { ...mergedHeaders, "Content-Type": "application/json" },
         body: JSON.stringify({ status }),
       });
 
@@ -71,7 +74,7 @@ export default function AccountDetailModal({
       }
 
       const result = await res.json();
-      // cập nhật info trong modal cho đẹp
+      // cập nhật info trong modal cho hợp
       setInfo((prev) => ({ ...(prev || {}), stat: result.new_status }));
       setStatus(result.new_status || status);
       alert("Cập nhật status thành công");

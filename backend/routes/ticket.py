@@ -15,16 +15,13 @@ def lookup_ticket():
         data = request.get_json()
         serial_number = data.get('serial_number')
         phone = data.get('phone')
-
         if not serial_number or not phone:
             return jsonify({
                 'success': False,
                 'message': 'Vui lòng cung cấp đầy đủ mã vé và số điện thoại'
             }), 400
 
-        # Remove leading 0 from phone if exists
-        if phone.startswith('0'):
-            phone = phone[1:]
+        
 
         conn = db_connection()
         cursor = conn.cursor(dictionary=True)
@@ -62,48 +59,50 @@ def lookup_ticket():
         """
 
         cursor.execute(query, (serial_number, phone))
-        result = cursor.fetchone()
+        rows = cursor.fetchall()
 
-        cursor.close()
-        conn.close()
-
-        if not result:
+        if not rows:
             return jsonify({
                 'success': False,
+                'phone': phone,
+                'serial_number':serial_number,
                 'message': 'Không tìm thấy vé với mã vé và số điện thoại này'
             }), 404
+
+        # If multiple rows match (unlikely), return the first
+        row = rows[0]
 
         # Format response
         response = {
             'success': True,
             'data': {
-                'ticket_id': result['ticket_id'],
-                'serial_number': result['serial_number'],
-                'seat_code': result['seat_code'],
-                'seat_price': result['seat_price'],
-                'ticket_status': result['ticket_status'],
-                'qr_code_link': result['qr_code_link'],
+                'ticket_id': row['ticket_id'],
+                'serial_number': row['serial_number'],
+                'seat_code': row['seat_code'],
+                'seat_price': row['seat_price'],
+                'ticket_status': row['ticket_status'],
+                'qr_code_link': row['qr_code_link'],
                 'trip': {
-                    'trip_id': result['trip_id'],
-                    'service_date': result['service_date'].isoformat() if result['service_date'] else None,
-                    'trip_status': result['trip_status']
+                    'trip_id': row['trip_id'],
+                    'service_date': row['service_date'].isoformat() if row['service_date'] else None,
+                    'trip_status': row['trip_status']
                 },
                 'route': {
-                    'route_id': result['route_id'],
-                    'distance': result['distance'],
-                    'default_duration_time': str(result['default_duration_time']) if result['default_duration_time'] else None,
-                    'departure_station': result['departure_station'],
-                    'departure_city': result['departure_city'],
-                    'departure_province': result['departure_province']
+                    'route_id': row['route_id'],
+                    'distance': row['distance'],
+                    'default_duration_time': str(row['default_duration_time']) if row['default_duration_time'] else None,
+                    'departure_station': row['departure_station'],
+                    'departure_city': row['departure_city'],
+                    'departure_province': row['departure_province']
                 },
                 'bus': {
-                    'plate_number': result['plate_number'],
-                    'vehicle_type': result['vehicle_type'],
-                    'capacity': result['capacity']
+                    'plate_number': row['plate_number'],
+                    'vehicle_type': row['vehicle_type'],
+                    'capacity': row['capacity']
                 },
                 'account': {
-                    'phone': result['phone'],
-                    'email': result['email']
+                    'phone': row['phone'],
+                    'email': row['email']
                 }
             }
         }
@@ -117,3 +116,6 @@ def lookup_ticket():
             'message': 'Lỗi server khi tra cứu vé',
             'error': str(e)
         }), 500
+    finally:
+        cursor.close()
+        conn.close()

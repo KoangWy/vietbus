@@ -1,8 +1,9 @@
 import React, { useEffect, useMemo, useState } from "react";
 import DataTable from "../components/DataTable";
 import UniversalCRUDModal from "../components/UniversalCRUDModal";
+import { getAuthHeaders } from "../utils/auth";
 
-const API = "http://localhost:5000/api/admin";
+const API = "http://127.0.0.1:5000/api/admin";
 
 export default function Page2() {
   const [routes, setRoutes] = useState([]);
@@ -31,7 +32,7 @@ export default function Page2() {
 
   async function refresh(type) {
     try {
-      const res = await fetch(`${API}/${type}`);
+      const res = await fetch(`${API}/${type}`, { headers: getAuthHeaders() });
       if (!res.ok) {
         console.error(`Failed to fetch ${type}`, await res.text());
         return;
@@ -277,6 +278,7 @@ function buildTripFieldsAdd() {
     try {
       await fetch(`${API}/${api}/${id}`, {
         method: "DELETE",
+        headers: getAuthHeaders(),
       });
       refresh(api);
     } catch (err) {
@@ -458,6 +460,7 @@ function buildTripFieldsAdd() {
         fields={modalFields}
         data={modalData}
         title={modalTitle}
+        authHeaders={getAuthHeaders()}
         onSaved={() => refresh(modalApi)}
       />
     </div>

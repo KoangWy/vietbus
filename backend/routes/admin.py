@@ -3,9 +3,21 @@ from datetime import datetime, date
 import re
 from utils.database import db_connection
 import datetime
+from utils.jwt_helper import token_required
 
 
 admin_bp = Blueprint("admin", __name__)
+
+
+@admin_bp.before_request
+def require_admin_auth():
+    # Allow preflight requests without auth
+    if request.method == "OPTIONS":
+        return None
+    # Use the decorator machinery with a no-op function
+    check = token_required({"ADMIN"})
+    result = check(lambda: None)()
+    return result
 
 
 

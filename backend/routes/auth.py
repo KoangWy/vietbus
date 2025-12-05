@@ -1,15 +1,25 @@
 from flask import Blueprint, request, jsonify
 from utils.database import db_connection
 import datetime
+from utils.jwt_helper import generate_token
 
 auth_bp = Blueprint("auth", __name__)
 
-# --- API ĐĂNG KÝ ---
+# Canonical roles for JWT
+ROLE_MAP = {
+    "passenger": "USER",
+    "user": "USER",
+    "staff": "STAFF",
+    "admin": "ADMIN",
+}
+
+
+# --- Registration ---
 @auth_bp.route("/register", methods=["POST"])
 def register():
     data = request.get_json() or {}
     role = data.get("role", "PASSENGER")
-    
+
     full_name = data.get("full_name")
     email = data.get("email")
     phone = data.get("phone")
@@ -24,14 +34,13 @@ def register():
         cursor = conn.cursor()
 
         if role == "PASSENGER":
-            # Thứ tự tham số phải khớp với Procedure trong SQL
             args = [full_name, dob, gov_id, email, phone, password, 0]
             result_args = cursor.callproc('sp_create_passenger_account', args)
-            new_id = result_args[6] # Lấy tham số OUT cuối cùng
-            
+            new_id = result_args[6]
+
             conn.commit()
             return jsonify({"success": True, "message": "Registration successful!", "userId": new_id}), 201
-        
+
         elif role == "STAFF":
              hire_date = data.get("hire_date", datetime.date.today())
              operator_id = data.get("operator_id", "OP001")
@@ -53,7 +62,8 @@ def register():
         if cursor: cursor.close()
         if conn: conn.close()
 
-# --- API ĐĂNG NHẬP ---
+
+# --- Login ---
 @auth_bp.route("/login", methods=["POST"])
 def login():
     data = request.get_json() or {}
@@ -67,9 +77,8 @@ def login():
         conn = db_connection()
         cursor = conn.cursor(dictionary=True)
 
-        # Tìm theo cột acc_password
         cursor.execute(
-            "SELECT * FROM account WHERE email = %s AND acc_password = %s", 
+            "SELECT * FROM account WHERE email = %s AND acc_password = %s",
             (email, password)
         )
         account = cursor.fetchone()
@@ -78,22 +87,30 @@ def login():
             return jsonify({"success": False, "message": "Incorrect email or password!"}), 401
 
         account_id = account['account_id']
-        
-        # Kiểm tra Role
+
+        # Check role mapping
         user_info = None
         if role == 'passenger':
             cursor.execute("""
-                SELECT ps.passenger_id as id, p.person_name as name 
-                FROM passenger ps 
-                JOIN person p ON ps.person_id = p.person_id 
+                SELECT ps.passenger_id as id, p.person_name as name
+                FROM passenger ps
+                JOIN person p ON ps.person_id = p.person_id
                 WHERE p.account_id = %s
             """, (account_id,))
             user_info = cursor.fetchone()
         elif role == 'staff':
             cursor.execute("""
-                SELECT s.staff_id as id, p.person_name as name 
-                FROM staff s 
-                JOIN person p ON s.person_id = p.person_id 
+                SELECT s.staff_id as id, p.person_name as name
+                FROM staff s
+                JOIN person p ON s.person_id = p.person_id
+                WHERE p.account_id = %s
+            """, (account_id,))
+            user_info = cursor.fetchone()
+        elif role == 'admin':
+            cursor.execute("""
+                SELECT s.staff_id as id, p.person_name as name
+                FROM staff s
+                JOIN person p ON s.person_id = p.person_id
                 WHERE p.account_id = %s
             """, (account_id,))
             user_info = cursor.fetchone()
@@ -101,15 +118,26 @@ def login():
         if not user_info:
             return jsonify({"success": False, "message": f"This account is not authorized as a {role.upper()}!"}), 403
 
+        mapped_role = ROLE_MAP.get(role, role.upper())
+        token_payload = {
+            "account_id": account_id,
+            "user_id": user_info["id"],
+            "role": mapped_role,
+            "name": user_info["name"],
+            "email": email,
+        }
+        token = generate_token(token_payload)
+
         return jsonify({
             "success": True,
             "message": "Login successful!",
             "user": {
                 "name": user_info['name'],
-                "role": role.upper(),
+                "role": mapped_role,
                 "id": user_info['id'],
                 "accountId": account_id
-            }
+            },
+            "token": token
         }), 200
 
     except Exception as e:

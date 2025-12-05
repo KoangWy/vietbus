@@ -48,7 +48,7 @@ export default function TicketLookup() {
         if (validateForm()) {
             try {
                 // Call the actual API endpoint
-                const API_URL = 'http://localhost:5000/api/tickets/lookup';
+                const API_URL = 'http://127.0.0.1:5000/api/tickets/lookup';
 
                 const response = await fetch(API_URL, {
                     method: 'POST',

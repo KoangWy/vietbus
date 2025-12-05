@@ -34,3 +34,7 @@ __pycache__/
 *.pyc
 *.pyo
 *.pyd
+
+data.sql
+mockdata.sql
+.vite

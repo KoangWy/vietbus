@@ -1,7 +1,8 @@
 // src/components/AddOperatorModal.jsx
 import React, { useState } from "react";
+import { getAuthHeaders } from "../utils/auth";
 
-export default function AddOperatorModal({ open, onClose, onCreated, apiBase }) {
+export default function AddOperatorModal({ open, onClose, onCreated, apiBase, authHeaders }) {
   const [form, setForm] = useState({
     legal_name: "",
     brand_name: "",
@@ -12,6 +13,8 @@ export default function AddOperatorModal({ open, onClose, onCreated, apiBase }) 
   const [error, setError] = useState(null);
 
   if (!open) return null;
+
+  const mergedHeaders = authHeaders || getAuthHeaders();
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -27,7 +30,7 @@ export default function AddOperatorModal({ open, onClose, onCreated, apiBase }) 
 
       const res = await fetch(`${apiBase}/operators`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { ...mergedHeaders, "Content-Type": "application/json" },
         body: JSON.stringify(form),
       });
 
@@ -39,7 +42,7 @@ export default function AddOperatorModal({ open, onClose, onCreated, apiBase }) 
 
       // backend trả {"status":"created","operator":{...}}
       if (onCreated) {
-        onCreated(data.operator);   
+        onCreated(data.operator);
       }
 
       // reset + đóng modal

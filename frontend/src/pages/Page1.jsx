@@ -2,8 +2,9 @@ import React, { useEffect, useState } from "react";
 import DataTable from "../components/DataTable";
 import AccountDetailModal from "../components/AccountDetailModal";
 import AddOperatorModal from "../components/AddOperatorModal";
+import { getAuthHeaders } from "../utils/auth";
 
-const API_BASE = "http://localhost:5000/api/admin"; // hoặc của bạn
+const API_BASE = "http://127.0.0.1:5000/api/admin"; // hoặc của bạn
 
 export default function Page1() {
   const [staffs, setStaffs] = useState([]);
@@ -27,9 +28,9 @@ export default function Page1() {
         setError(null);
 
         const [passRes, staffRes, opRes] = await Promise.all([
-          fetch(`${API_BASE}/passengers`),
-          fetch(`${API_BASE}/staffs`),
-          fetch(`${API_BASE}/operators`),
+          fetch(`${API_BASE}/passengers`, { headers: getAuthHeaders() }),
+          fetch(`${API_BASE}/staffs`, { headers: getAuthHeaders() }),
+          fetch(`${API_BASE}/operators`, { headers: getAuthHeaders() }),
         ]);
 
         if (!passRes.ok || !staffRes.ok || !opRes.ok) {
@@ -68,6 +69,7 @@ export default function Page1() {
     try {
       const res = await fetch(`${API_BASE}/operators/${row.operator_id}`, {
         method: "DELETE",
+        headers: getAuthHeaders(),
       });
       if (!res.ok) throw new Error("Xoá operator thất bại");
 
@@ -190,6 +192,7 @@ export default function Page1() {
         type={detailType}
         id={detailId}
         apiBase={API_BASE}
+        authHeaders={getAuthHeaders()}
         onClose={closeDetail}
       />
 
@@ -199,6 +202,7 @@ export default function Page1() {
         onClose={() => setAddOpOpen(false)}
         onCreated={handleOperatorCreated}
         apiBase={API_BASE}
+        authHeaders={getAuthHeaders()}
       />
     </div>
   );

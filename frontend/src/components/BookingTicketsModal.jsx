@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from "react";
+import { getAuthHeaders } from "../utils/auth";
 
 const TICKET_STATUS_OPTIONS = ["Issued", "Used", "Refunded", "Cancelled"];
 
-export default function BookingTicketsModal({ open, onClose, booking, apiBase }) {
+export default function BookingTicketsModal({ open, onClose, booking, apiBase, authHeaders }) {
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(false);
   const [savingId, setSavingId] = useState(null);
@@ -24,7 +25,8 @@ export default function BookingTicketsModal({ open, onClose, booking, apiBase })
     setLoading(true);
     try {
       const res = await fetch(
-        `${apiBase}/tickets?booking_id=${booking.booking_id}`
+        `${apiBase}/tickets?booking_id=${booking.booking_id}`,
+        { headers: authHeaders || getAuthHeaders() }
       );
 
       if (!res.ok) {
@@ -58,7 +60,7 @@ export default function BookingTicketsModal({ open, onClose, booking, apiBase })
 
       const res = await fetch(`${apiBase}/tickets/${ticket.ticket_id}`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers: { ...(authHeaders || getAuthHeaders()), "Content-Type": "application/json" },
         body: JSON.stringify({ ticket_status: ticket.ticket_status }),
       });
 
@@ -95,7 +97,7 @@ export default function BookingTicketsModal({ open, onClose, booking, apiBase })
         `${apiBase}/bookings/${booking.booking_id}/tickets`,
         {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { ...(authHeaders || getAuthHeaders()), "Content-Type": "application/json" },
           body: JSON.stringify({
             trip_id: Number(formAdd.trip_id),
             fare_id: Number(formAdd.fare_id),

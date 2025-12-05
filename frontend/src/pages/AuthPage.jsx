@@ -93,6 +93,9 @@ export default function AuthPage() {
             alert(data.message);
             
             if (isLogin) {
+                const authPayload = { user: data.user, token: data.token };
+                localStorage.setItem('auth', JSON.stringify(authPayload));
+                // Keep backward compatibility with previous key if used elsewhere
                 localStorage.setItem('user', JSON.stringify(data.user));
                 navigate('/');
                 window.location.reload();

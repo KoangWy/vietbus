@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { toDateTimeLocal, toBackendDateTime } from "../utils/date";
+import { getAuthHeaders } from "../utils/auth";
 
 export default function UniversalCRUDModal({
   open,
@@ -11,6 +12,7 @@ export default function UniversalCRUDModal({
   apiBase,
   api,
   onSaved,
+  authHeaders,
 }) {
   const [form, setForm] = useState({});
 
@@ -89,7 +91,7 @@ export default function UniversalCRUDModal({
     try {
       const res = await fetch(url, {
         method,
-        headers: { "Content-Type": "application/json" },
+        headers: { ...getAuthHeaders("application/json"), ...(authHeaders || {}) },
         body: JSON.stringify(payload),
       });
 
