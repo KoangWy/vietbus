@@ -18,8 +18,19 @@ export function getAuthHeaders(contentType) {
 
 export function getStoredUser() {
   try {
+    // Try to get from 'auth' first (contains user object from login)
     const stored = JSON.parse(localStorage.getItem("auth") || "{}");
-    return stored.user || null;
+    if (stored.user) {
+      return stored.user;
+    }
+    
+    // Fallback to 'user' key (for backward compatibility)
+    const userStored = localStorage.getItem("user");
+    if (userStored) {
+      return JSON.parse(userStored);
+    }
+    
+    return null;
   } catch (_) {
     return null;
   }

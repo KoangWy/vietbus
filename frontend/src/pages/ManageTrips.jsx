@@ -286,7 +286,7 @@ const ManageTrips = () => {
         />
       )}
 
-      <Footer />
+      {selectedTrip && (
         <TripDetailModal
           trip={selectedTrip}
           onClose={() => setSelectedTrip(null)}

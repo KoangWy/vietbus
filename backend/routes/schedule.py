@@ -200,6 +200,13 @@ def get_trip_detail(trip_id):
                     ORDER BY f.valid_from DESC
                     LIMIT 1
                 ), 0) AS seat_price,
+                COALESCE((
+                    SELECT fare_id
+                    FROM fare f
+                    WHERE f.route_id = rt.route_id
+                    ORDER BY f.valid_from DESC
+                    LIMIT 1
+                ), 0) AS fare_id,
                 fn_get_available_seats(t.trip_id) AS available_seats
             FROM trip t
             JOIN routetrip rt ON t.route_id = rt.route_id
@@ -263,6 +270,7 @@ def get_trip_detail(trip_id):
             "legal_name": row["legal_name"],
             
             # Giá vé và ghế
+            "fare_id": row["fare_id"],
             "price": row["seat_price"],
             "available_seats": available if available is not None else 0,
         }

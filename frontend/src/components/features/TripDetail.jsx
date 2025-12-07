@@ -2,9 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import Header from '../layout/Header';
 import Footer from '../layout/Footer';
+import SeatSelector from './SeatSelector';
 import { FiNavigation, FiClock, FiCalendar, FiTruck } from 'react-icons/fi';
+import { getStoredUser } from '../../utils/auth';
 
 const API_BASE_URL = 'http://127.0.0.1:5000/api/schedule';
+const BOOKING_API_URL = 'http://127.0.0.1:5000/api/bookings';
 
 const TripDetail = () => {
   const { tripId } = useParams();
@@ -15,6 +18,10 @@ const TripDetail = () => {
   const [error, setError] = useState(null);
   const [showQRPopup, setShowQRPopup] = useState(false);
   const [showSuccessPopup, setShowSuccessPopup] = useState(false);
+  const [bookingId, setBookingId] = useState(null);
+  const [bookingError, setBookingError] = useState(null);
+  const [showSeatSelector, setShowSeatSelector] = useState(false);
+  const [selectedSeats, setSelectedSeats] = useState([]);
 
   useEffect(() => {
     const fetchTripDetail = async () => {
@@ -58,20 +65,94 @@ const TripDetail = () => {
   };
 
   const handleConfirmBooking = () => {
-    // Hiển thị popup QR code
-    setShowQRPopup(true);
+    // Check if user is logged in
+    const user = getStoredUser();
     
-    // Sau 2.5s, ẩn QR và hiển thị success popup
-    setTimeout(() => {
-      setShowQRPopup(false);
-      setShowSuccessPopup(true);
-    }, 2500);
+    // Debug: Log user data to console
+    console.log('User from getStoredUser():', user);
+    
+    // Check both account_id and accountId for compatibility
+    const accountId = user?.account_id || user?.accountId;
+    
+    if (!user || !accountId) {
+      alert('Vui lòng đăng nhập để đặt vé');
+      navigate('/auth');
+      return;
+    }
+    
+    // Show seat selector
+    setShowSeatSelector(true);
+  };
+
+  const handleSeatConfirm = async (seats) => {
+    try {
+      setShowSeatSelector(false);
+      setSelectedSeats(seats);
+      setBookingError(null);
+      
+      // Get account_id from logged-in user
+      const user = getStoredUser();
+      // Check both account_id and accountId for compatibility
+      const account_id = user?.account_id || user?.accountId;
+      
+      // Use selected seats
+      const seat_list = seats;
+      
+      // Create booking request
+      const bookingData = {
+        currency: 'VND',
+        account_id: account_id,
+        operator_id: trip.operator_id, // Assuming trip has operator_id
+        trip_id: parseInt(tripId),
+        fare_id: trip.fare_id || 1, // Assuming trip has fare_id
+        seat_list: seat_list,
+        qr_code_link: '/assets/images/QR_code.jpeg'
+      };
+      
+      // Hiển thị popup QR code ngay lập tức
+      setShowQRPopup(true);
+      
+      // Sau 2.5s, gọi API tạo booking (giả lập thanh toán thành công)
+      setTimeout(async () => {
+        try {
+          const response = await fetch(`${BOOKING_API_URL}/create`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(bookingData)
+          });
+          
+          const result = await response.json();
+          
+          if (!response.ok || !result.success) {
+            throw new Error(result.message || 'Failed to create booking');
+          }
+          
+          // Lưu booking_id và hiển thị success popup
+          setBookingId(result.data.booking_id);
+          setShowQRPopup(false);
+          setShowSuccessPopup(true);
+          
+        } catch (err) {
+          console.error('Booking error:', err);
+          setBookingError(err.message);
+          setShowQRPopup(false);
+          alert(`Đặt vé thất bại: ${err.message}`);
+        }
+      }, 2500);
+      
+    } catch (err) {
+      console.error('Error initiating booking:', err);
+      setBookingError(err.message);
+      alert(`Lỗi: ${err.message}`);
+    }
   };
 
   const handleCloseSuccessPopup = () => {
     setShowSuccessPopup(false);
-    // Có thể redirect về trang khác nếu cần
-    // navigate('/my-bookings');
+    // Có thể redirect về trang tra cứu vé hoặc danh sách booking
+    navigate('/ticket-lookup');
   };
 
   const formatCurrency = (val) => {
@@ -486,6 +567,14 @@ const TripDetail = () => {
               marginBottom: '25px',
               textAlign: 'left'
             }}>
+              {bookingId && (
+                <div style={{ marginBottom: '10px' }}>
+                  <strong style={{ color: '#333' }}>Booking ID:</strong>
+                  <span style={{ marginLeft: '10px', color: 'var(--futa-orange)', fontWeight: 'bold' }}>
+                    #{bookingId}
+                  </span>
+                </div>
+              )}
               <div style={{ marginBottom: '10px' }}>
                 <strong style={{ color: '#333' }}>Trip Code:</strong>
                 <span style={{ marginLeft: '10px', color: '#666' }}>#{trip.trip_id}</span>
@@ -519,6 +608,15 @@ const TripDetail = () => {
             </button>
           </div>
         </div>
+      )}
+
+      {/* Seat Selector Modal */}
+      {showSeatSelector && (
+        <SeatSelector
+          trip={trip}
+          onClose={() => setShowSeatSelector(false)}
+          onConfirm={handleSeatConfirm}
+        />
       )}
     </>
   );
