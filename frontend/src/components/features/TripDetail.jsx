@@ -4,7 +4,8 @@ import Header from '../layout/Header';
 import Footer from '../layout/Footer';
 import SeatSelector from './SeatSelector';
 import { FiNavigation, FiClock, FiCalendar, FiTruck } from 'react-icons/fi';
-import { getStoredUser } from '../../utils/auth';
+import { getStoredUser, getAuthHeaders } from '../../utils/auth';
+import layoutImg from '../../../assets/images/layout.jpg';
 
 const API_BASE_URL = 'http://127.0.0.1:5000/api/schedule';
 const BOOKING_API_URL = 'http://127.0.0.1:5000/api/bookings';
@@ -16,12 +17,12 @@ const TripDetail = () => {
   const [trip, setTrip] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [showQRPopup, setShowQRPopup] = useState(false);
   const [showSuccessPopup, setShowSuccessPopup] = useState(false);
-  const [bookingId, setBookingId] = useState(null);
+  const [seatInput, setSeatInput] = useState('');
   const [bookingError, setBookingError] = useState(null);
-  const [showSeatSelector, setShowSeatSelector] = useState(false);
-  const [selectedSeats, setSelectedSeats] = useState([]);
+  const [bookingLoading, setBookingLoading] = useState(false);
+  const [bookingResult, setBookingResult] = useState(null);
+  const [user] = useState(() => getStoredUser());
 
   useEffect(() => {
     const fetchTripDetail = async () => {
@@ -64,95 +65,80 @@ const TripDetail = () => {
     });
   };
 
-  const handleConfirmBooking = () => {
-    // Check if user is logged in
-    const user = getStoredUser();
-    
-    // Debug: Log user data to console
-    console.log('User from getStoredUser():', user);
-    
-    // Check both account_id and accountId for compatibility
-    const accountId = user?.account_id || user?.accountId;
-    
-    if (!user || !accountId) {
-      alert('Vui lòng đăng nhập để đặt vé');
-      navigate('/auth');
+  const handleConfirmBooking = async () => {
+    setBookingError(null);
+    const currentUser = user || getStoredUser();
+
+    if (!currentUser?.accountId && !currentUser?.account_id) {
+      alert('Please login to continue.');
+      navigate('/login', { state: { returnTo: location.pathname } });
       return;
     }
-    
-    // Show seat selector
-    setShowSeatSelector(true);
-  };
 
-  const handleSeatConfirm = async (seats) => {
+    const seatCodes = seatInput
+      .split(/[\,\s]+/)
+      .map((s) => s.trim())
+      .filter(Boolean);
+
+    if (seatCodes.length === 0) {
+      setBookingError('Please enter at least one seat code (e.g. A1,A2,A3).');
+      return;
+    }
+
+    if (!trip?.fare_id) {
+      setBookingError('Fare information is missing for this trip. Please try again later.');
+      return;
+    }
+
+    const payload = {
+      currency: 'VND',
+      account_id: currentUser.accountId || currentUser.account_id,
+      operator_id: trip.operator_id,
+      trip_id: trip.trip_id,
+      fare_id: trip.fare_id,
+      seat_codes: seatCodes,
+    };
+
+    setBookingLoading(true);
     try {
-      setShowSeatSelector(false);
-      setSelectedSeats(seats);
-      setBookingError(null);
-      
-      // Get account_id from logged-in user
-      const user = getStoredUser();
-      // Check both account_id and accountId for compatibility
-      const account_id = user?.account_id || user?.accountId;
-      
-      // Use selected seats
-      const seat_list = seats;
-      
-      // Create booking request
-      const bookingData = {
-        currency: 'VND',
-        account_id: account_id,
-        operator_id: trip.operator_id, // Assuming trip has operator_id
-        trip_id: parseInt(tripId),
-        fare_id: trip.fare_id || 1, // Assuming trip has fare_id
-        seat_list: seat_list,
-        qr_code_link: '/assets/images/QR_code.jpeg'
-      };
-      
-      // Hiển thị popup QR code ngay lập tức
-      setShowQRPopup(true);
-      
-      // Sau 2.5s, gọi API tạo booking (giả lập thanh toán thành công)
-      setTimeout(async () => {
-        try {
-          const response = await fetch(`${BOOKING_API_URL}/create`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(bookingData)
-          });
-          
-          const result = await response.json();
-          
-          if (!response.ok || !result.success) {
-            throw new Error(result.message || 'Failed to create booking');
-          }
-          
-          // Lưu booking_id và hiển thị success popup
-          setBookingId(result.data.booking_id);
-          setShowQRPopup(false);
-          setShowSuccessPopup(true);
-          
-        } catch (err) {
-          console.error('Booking error:', err);
-          setBookingError(err.message);
-          setShowQRPopup(false);
-          alert(`Đặt vé thất bại: ${err.message}`);
-        }
-      }, 2500);
-      
+      const response = await fetch(`${API_BASE_URL}/bookings`, {
+        method: 'POST',
+        headers: getAuthHeaders('application/json'),
+        body: JSON.stringify(payload),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || data.message || 'Booking failed');
+      }
+
+      setBookingResult({
+        bookingId: data.booking_id,
+        seatCodes: data.seat_codes,
+        ticketIds: data.ticket_ids || [],
+        ticketSerials: (data.ticket_serials || []).map((t) => t.serial_number),
+        amount: trip.price * seatCodes.length,
+      });
+      setShowSuccessPopup(true);
+      setSeatInput('');
+      setTrip((prev) =>
+        prev
+          ? { ...prev, available_seats: Math.max(0, prev.available_seats - seatCodes.length) }
+          : prev
+      );
     } catch (err) {
-      console.error('Error initiating booking:', err);
       setBookingError(err.message);
-      alert(`Lỗi: ${err.message}`);
+    } finally {
+      setBookingLoading(false);
     }
   };
 
   const handleCloseSuccessPopup = () => {
     setShowSuccessPopup(false);
-    // Có thể redirect về trang tra cứu vé hoặc danh sách booking
-    navigate('/ticket-lookup');
+    setBookingResult(null);
+    // Có thể redirect về trang khác nếu cần
+    // navigate('/my-bookings');
   };
 
   const formatCurrency = (val) => {
@@ -385,6 +371,53 @@ const TripDetail = () => {
             </div>
           </div>
 
+          {/* Booking input */}
+          <div style={{
+            backgroundColor: '#fff',
+            borderRadius: '12px',
+            padding: '20px',
+            boxShadow: '0 2px 10px rgba(0,0,0,0.08)',
+            marginTop: '10px'
+          }}>
+            <h3 style={{ marginTop: 0, color: '#333' }}>Booking Details</h3>
+            <div style={{ marginBottom: '12px' }}>
+              <img
+                src={layoutImg}
+                alt="Seat layout"
+                style={{
+                  width: '100%',
+                  maxHeight: '320px',
+                  objectFit: 'contain',
+                  borderRadius: '10px',
+                  border: '1px solid #eee'
+                }}
+              />
+            </div>
+            <p style={{ color: '#666', marginBottom: '10px' }}>
+              Enter the seat codes you want to book (comma or space separated).
+            </p>
+            <input
+              type="text"
+              value={seatInput}
+              onChange={(e) => setSeatInput(e.target.value)}
+              placeholder="e.g. A1, A2, A3"
+              style={{
+                width: '100%',
+                padding: '12px 14px',
+                borderRadius: '8px',
+                border: '1px solid #ddd',
+                fontSize: '1rem',
+                marginBottom: '10px',
+              }}
+              disabled={bookingLoading}
+            />
+            {bookingError && (
+              <div style={{ color: '#d32f2f', marginBottom: '10px', fontSize: '0.95rem' }}>
+                {bookingError}
+              </div>
+            )}
+          </div>
+
           {/* Action Buttons */}
           <div style={{
             display: 'flex',
@@ -413,7 +446,7 @@ const TripDetail = () => {
                 e.target.style.color = '#666';
               }}
             >
-              ← Back to Trip List
+              Back to Trip List
             </button>
 
             <button
@@ -423,83 +456,14 @@ const TripDetail = () => {
                 padding: '12px 40px',
                 fontSize: '1rem',
               }}
+              disabled={bookingLoading}
             >
-              Confirm Booking
+              {bookingLoading ? 'Processing...' : 'Confirm Booking'}
             </button>
           </div>
         </div>
       </div>
       <Footer />
-
-      {/* QR Code Payment Popup */}
-      {showQRPopup && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: 'rgba(0, 0, 0, 0.7)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 1000,
-        }}>
-          <div style={{
-            backgroundColor: 'white',
-            borderRadius: '16px',
-            padding: '30px',
-            maxWidth: '450px',
-            textAlign: 'center',
-            boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
-          }}>
-            <h2 style={{ 
-              color: 'var(--futa-orange)', 
-              marginBottom: '20px',
-              fontSize: '1.5rem'
-            }}>
-              Payment Required
-            </h2>
-            <p style={{ color: '#666', marginBottom: '20px' }}>
-              Please scan the QR code to complete payment
-            </p>
-            <div style={{
-              display: 'flex',
-              justifyContent: 'center',
-              marginBottom: '20px'
-            }}>
-              <img 
-                src="/assets/images/QR_code.jpeg" 
-                alt="QR Code Payment" 
-                style={{ 
-                  width: '300px', 
-                  height: '300px',
-                  borderRadius: '8px',
-                  border: '2px solid #f0f0f0'
-                }}
-              />
-            </div>
-            <div style={{
-              backgroundColor: '#fff8f0',
-              padding: '15px',
-              borderRadius: '8px',
-              marginBottom: '15px'
-            }}>
-              <p style={{ 
-                fontSize: '1.2rem', 
-                fontWeight: 'bold',
-                color: 'var(--futa-orange)',
-                margin: 0
-              }}>
-                Amount: {formatCurrency(trip.price)}
-              </p>
-            </div>
-            <p style={{ fontSize: '0.9rem', color: '#999' }}>
-              Processing payment...
-            </p>
-          </div>
-        </div>
-      )}
 
       {/* Payment Success Popup */}
       {showSuccessPopup && (
@@ -590,9 +554,33 @@ const TripDetail = () => {
               <div>
                 <strong style={{ color: '#333' }}>Total Amount:</strong>
                 <span style={{ marginLeft: '10px', color: 'var(--futa-orange)', fontWeight: 'bold' }}>
-                  {formatCurrency(trip.price)}
+                  {formatCurrency(bookingResult?.amount || trip.price)}
                 </span>
               </div>
+              {bookingResult?.seatCodes && (
+                <div style={{ marginTop: '10px' }}>
+                  <strong style={{ color: '#333' }}>Seats:</strong>
+                  <span style={{ marginLeft: '10px', color: '#666' }}>
+                    {bookingResult.seatCodes.join(', ')}
+                  </span>
+                </div>
+              )}
+              {bookingResult?.ticketSerials?.length > 0 && (
+                <div style={{ marginTop: '10px' }}>
+                  <strong style={{ color: '#333' }}>Ticket Serials:</strong>
+                  <span style={{ marginLeft: '10px', color: '#666' }}>
+                    {bookingResult.ticketSerials.join(', ')}
+                  </span>
+                </div>
+              )}
+              {bookingResult?.bookingId && (
+                <div style={{ marginTop: '6px' }}>
+                  <strong style={{ color: '#333' }}>Booking ID:</strong>
+                  <span style={{ marginLeft: '10px', color: '#666' }}>
+                    {bookingResult.bookingId}
+                  </span>
+                </div>
+              )}
             </div>
 
             <button

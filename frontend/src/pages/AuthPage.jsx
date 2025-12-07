@@ -1,7 +1,5 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import Header from '../components/layout/Header';
-import Footer from '../components/layout/Footer';
 import '../App.css';
 
 export default function AuthPage() {
@@ -121,7 +119,6 @@ export default function AuthPage() {
 
   return (
     <>  
-      <Header />
       <div className="auth-page">
         <div className="auth-container">
           <h2 className="auth-title">{isLogin ? 'SYSTEM LOGIN' : 'CREATE ACCOUNT'}</h2>
@@ -236,7 +233,6 @@ export default function AuthPage() {
           </p>
         </div>
       </div>
-      <Footer />
     </>
   );
 }

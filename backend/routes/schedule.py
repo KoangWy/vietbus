@@ -200,13 +200,13 @@ def get_trip_detail(trip_id):
                     ORDER BY f.valid_from DESC
                     LIMIT 1
                 ), 0) AS seat_price,
-                COALESCE((
+                (
                     SELECT fare_id
-                    FROM fare f
-                    WHERE f.route_id = rt.route_id
-                    ORDER BY f.valid_from DESC
+                    FROM fare f2
+                    WHERE f2.route_id = rt.route_id
+                    ORDER BY f2.valid_from DESC
                     LIMIT 1
-                ), 0) AS fare_id,
+                ) AS fare_id,
                 fn_get_available_seats(t.trip_id) AS available_seats
             FROM trip t
             JOIN routetrip rt ON t.route_id = rt.route_id
@@ -279,6 +279,172 @@ def get_trip_detail(trip_id):
         
     except Exception as exc:
         return jsonify({"error": str(exc)}), 500
+    finally:
+        cursor.close()
+        conn.close()
+
+
+@schedule_bp.route("/bookings", methods=["POST"])
+def create_booking_with_multiple_tickets():
+    data = request.get_json() or {}
+
+    currency    = data.get("currency")
+    account_id  = data.get("account_id")
+    operator_id = data.get("operator_id")
+    trip_id     = data.get("trip_id")
+    fare_id     = data.get("fare_id")
+    seat_codes  = data.get("seat_codes")  # list[str] (VD: ["1","2","3"])
+
+    # 1. Validate input cơ bản
+    if not all([currency, account_id, operator_id, trip_id, fare_id, seat_codes]):
+        return jsonify({"error": "missing_field"}), 400
+
+    if not isinstance(seat_codes, list) or len(seat_codes) == 0:
+        return jsonify({"error": "seat_codes_must_be_non_empty_array"}), 400
+
+    # Đảm bảo mọi phần tử là string
+    seat_codes = [str(s) for s in seat_codes]
+
+    conn = db_connection()
+    cursor = conn.cursor(dictionary=True)
+    try:
+        conn.start_transaction()
+
+        # 2. Lấy thông tin trip + bus
+        cursor.execute("""
+            SELECT t.trip_id, t.route_id, b.capacity
+            FROM trip t
+            JOIN bus b ON t.bus_id = b.bus_id
+            WHERE t.trip_id = %s
+        """, (trip_id,))
+        trip_row = cursor.fetchone()
+        if not trip_row:
+            return jsonify({"error": "trip_not_found"}), 404
+
+        route_id = trip_row["route_id"]
+        capacity = trip_row["capacity"]
+
+        # 3. Lấy thông tin fare
+        cursor.execute("""
+            SELECT route_id, seat_price
+            FROM fare
+            WHERE fare_id = %s
+        """, (fare_id,))
+        fare_row = cursor.fetchone()
+        if not fare_row:
+            return jsonify({"error": "fare_not_found"}), 404
+
+        fare_route_id = fare_row["route_id"]
+        seat_price    = fare_row["seat_price"]
+
+        # Check route match
+        if route_id != fare_route_id:
+            return jsonify({"error": "fare_route_mismatch"}), 400
+
+        # (Optional) Nếu bạn vẫn chỉ dùng số 1..capacity nhưng lưu string,
+        # có thể check như này:
+        invalid_seats = []
+        for s in seat_codes:
+            if s.isdigit():
+                num = int(s)
+                if num < 1 or num > capacity:
+                    invalid_seats.append(s)
+            else:
+                # Nếu bạn cho phép mã kiểu "A01", bỏ check này hoặc custom thêm
+                pass
+
+        if invalid_seats:
+            return jsonify({
+                "error": "invalid_seat_code",
+                "invalid_seats": invalid_seats
+            }), 400
+
+        # 4. Kiểm tra trùng ghế với ticket đang Issued/Used
+        format_strings = ",".join(["%s"] * len(seat_codes))
+        cursor.execute(f"""
+            SELECT seat_code
+            FROM ticket
+            WHERE trip_id = %s
+              AND seat_code IN ({format_strings})
+              AND ticket_status IN ('Issued', 'Used')
+        """, (trip_id, *seat_codes))
+        taken_rows = cursor.fetchall()
+        if taken_rows:
+            taken = [r["seat_code"] for r in taken_rows]
+            return jsonify({
+                "error": "seat_already_taken",
+                "taken_seats": taken
+            }), 400
+
+        # 5. Tạo booking (total_amount tạm = 0, sẽ cập nhật sau)
+        cursor.execute("""
+            INSERT INTO booking (currency, total_amount, account_id, operator_id)
+            VALUES (%s, 0, %s, %s)
+        """, (currency, account_id, operator_id))
+        booking_id = cursor.lastrowid
+
+        # 6. Tạo tickets
+        ticket_ids = []
+        for s in seat_codes:
+            cursor.execute("""
+                INSERT INTO ticket (
+                    trip_id,
+                    account_id,
+                    booking_id,
+                    fare_id,
+                    qr_code_link,
+                    ticket_status,
+                    seat_price,
+                    seat_code
+                )
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            """, (
+                trip_id,
+                account_id,
+                booking_id,
+                fare_id,
+                None,              # qr_code_link: tạm để None
+                "Issued",
+                seat_price,
+                s                  # seat_code là VARCHAR
+            ))
+            ticket_ids.append(cursor.lastrowid)
+
+        # Fetch serial numbers for the newly created tickets
+        ticket_serials = []
+        if ticket_ids:
+            placeholders = ",".join(["%s"] * len(ticket_ids))
+            cursor.execute(f"""
+                SELECT ticket_id, serial_number
+                FROM ticket
+                WHERE ticket_id IN ({placeholders})
+            """, tuple(ticket_ids))
+            ticket_serials = [
+                {"ticket_id": row["ticket_id"], "serial_number": row["serial_number"]}
+                for row in cursor.fetchall()
+            ]
+
+        # 7. Cập nhật total_amount sử dụng fn_calculate_booking_total
+        cursor.execute("""
+            UPDATE booking
+            SET total_amount = fn_calculate_booking_total(%s)
+            WHERE booking_id = %s
+        """, (booking_id, booking_id))
+
+        conn.commit()
+
+        return jsonify({
+            "booking_id": booking_id,
+            "ticket_ids": ticket_ids,
+            "ticket_serials": ticket_serials,
+            "seat_codes": seat_codes,
+            "currency": currency
+        }), 201
+
+    except Exception as e:
+        conn.rollback()
+        print("Error in create_booking_with_multiple_tickets:", e)
+        return jsonify({"error": "internal_server_error", "details": str(e)}), 500
     finally:
         cursor.close()
         conn.close()

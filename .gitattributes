@@ -1,0 +1,14 @@
+# Ép tất cả file text dùng LF
+* text=auto eol=lf
+
+# Python files
+*.py text eol=lf
+
+# JavaScript/JSX files
+*.js text eol=lf
+*.jsx text eol=lf
+
+# Requirements và config
+*.txt text eol=lf
+*.json text eol=lf
+*.yml text eol=lf

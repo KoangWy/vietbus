@@ -1,7 +1,5 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import Header from "../components/layout/Header";
-import Footer from "../components/layout/Footer";
 import { getStoredUser } from "../utils/auth";
 import "../App.css";
 
@@ -47,7 +45,6 @@ export default function AdminLogin() {
 
   return (
     <>
-      <Header />
       <div className="auth-page">
         <div className="auth-container">
           <h2 className="auth-title">ADMIN LOGIN</h2>
@@ -78,7 +75,6 @@ export default function AdminLogin() {
           </form>
         </div>
       </div>
-      <Footer />
     </>
   );
 }
