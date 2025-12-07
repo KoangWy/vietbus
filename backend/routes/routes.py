@@ -45,11 +45,16 @@ def get_routes():
                 ds.station_name AS departure_station,
                 das.station_id AS arrival_station_id,
                 das.city AS arrival_city,
-                das.station_name AS arrival_station
+                das.station_name AS arrival_station,
+                COALESCE(MIN(f.seat_price), 0) AS price
             FROM routetrip rt
             INNER JOIN operator o ON rt.operator_id = o.operator_id
             INNER JOIN station ds ON rt.station_id = ds.station_id
             INNER JOIN station das ON rt.arrival_station = das.station_id
+            LEFT JOIN fare f ON rt.route_id = f.route_id AND f.valid_to >= CURDATE()
+            GROUP BY rt.route_id, rt.distance, rt.default_duration_time, rt.operator_id,
+                     o.brand_name, ds.station_id, ds.city, ds.station_name,
+                     das.station_id, das.city, das.station_name
             ORDER BY rt.route_id DESC
         """
         cursor.execute(query)
@@ -85,6 +90,7 @@ def create_route():
     distance = data.get("distance")
     default_duration_time = data.get("default_duration_time")
     operator_id = data.get("operator_id")
+    price = data.get("price")
     
     # Validate departure and arrival stations are different
     if departure_station_id == arrival_station_id:
@@ -97,6 +103,15 @@ def create_route():
             return jsonify({"error": "Distance must be greater than 0"}), 400
     except (TypeError, ValueError):
         return jsonify({"error": "Invalid distance value"}), 400
+    
+    # Validate price if provided
+    if price is not None:
+        try:
+            price = int(price)
+            if price < 0:
+                return jsonify({"error": "Price must be a positive number"}), 400
+        except (TypeError, ValueError):
+            return jsonify({"error": "Invalid price value"}), 400
     
     conn = db_connection()
     cursor = conn.cursor()
@@ -134,9 +149,24 @@ def create_route():
             VALUES (%s, %s, %s, %s, %s)
         """
         cursor.execute(insert_query, (departure_station_id, arrival_station_id, distance, default_duration_time, operator_id))
-        conn.commit()
-        
         route_id = cursor.lastrowid
+        
+        # Create fare entry if price is provided
+        if price is not None:
+            from datetime import date, timedelta
+            valid_from = date.today()
+            valid_to = valid_from + timedelta(days=365)  # Valid for 1 year
+            
+            fare_query = """
+                INSERT INTO fare (currency, discount, valid_from, valid_to, taxes, route_id, 
+                                  surcharges, base_fare, seat_price, seat_class)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            """
+            cursor.execute(fare_query, (
+                'VND', 0, valid_from, valid_to, 0, route_id, 0, price, price, 'Standard'
+            ))
+        
+        conn.commit()
         return jsonify({"message": "Route created successfully", "route_id": route_id}), 201
         
     except Exception as e:
@@ -152,7 +182,7 @@ def update_route(route_id):
     """Update an existing route"""
     data = request.get_json(silent=True) or {}
     
-    allowed_fields = ["departure_station_id", "arrival_station_id", "distance", "default_duration_time", "operator_id"]
+    allowed_fields = ["departure_station_id", "arrival_station_id", "distance", "default_duration_time", "operator_id", "price"]
     update_fields = {k: v for k, v in data.items() if k in allowed_fields}
     
     if not update_fields:
@@ -176,6 +206,18 @@ def update_route(route_id):
             except (TypeError, ValueError):
                 return jsonify({"error": "Invalid distance value"}), 400
         
+        # Validate price if provided
+        price = None
+        if "price" in update_fields:
+            try:
+                price = int(update_fields["price"])
+                if price < 0:
+                    return jsonify({"error": "Price must be a positive number"}), 400
+                # Remove from route update fields as it's handled separately
+                del update_fields["price"]
+            except (TypeError, ValueError):
+                return jsonify({"error": "Invalid price value"}), 400
+        
         # Build update query
         set_clauses = []
         values = []
@@ -195,10 +237,39 @@ def update_route(route_id):
         
         values.append(route_id)
         
-        update_query = f"UPDATE routetrip SET {', '.join(set_clauses)} WHERE route_id = %s"
-        cursor.execute(update_query, values)
-        conn.commit()
+        if set_clauses:
+            update_query = f"UPDATE routetrip SET {', '.join(set_clauses)} WHERE route_id = %s"
+            cursor.execute(update_query, values)
         
+        # Update fare entries if price is provided
+        if price is not None:
+            # Update all fare entries for this route
+            fare_update_query = """
+                UPDATE fare 
+                SET seat_price = %s, base_fare = %s
+                WHERE route_id = %s
+            """
+            cursor.execute(fare_update_query, (price, price, route_id))
+            
+            # If no fare entries exist, create one
+            cursor.execute("SELECT COUNT(*) FROM fare WHERE route_id = %s", (route_id,))
+            fare_count = cursor.fetchone()[0]
+            
+            if fare_count == 0:
+                from datetime import date, timedelta
+                valid_from = date.today()
+                valid_to = valid_from + timedelta(days=365)
+                
+                fare_insert_query = """
+                    INSERT INTO fare (currency, discount, valid_from, valid_to, taxes, route_id,
+                                      surcharges, base_fare, seat_price, seat_class)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                """
+                cursor.execute(fare_insert_query, (
+                    'VND', 0, valid_from, valid_to, 0, route_id, 0, price, price, 'Standard'
+                ))
+        
+        conn.commit()
         return jsonify({"message": "Route updated successfully"}), 200
         
     except Exception as e:

@@ -15,6 +15,7 @@ const RouteFormModal = ({
     distance: '',
     default_duration_time: '',
     operator_id: '',
+    price: '',
   });
   const [stations, setStations] = useState([]);
   const [loadingStations, setLoadingStations] = useState(false);
@@ -30,6 +31,7 @@ const RouteFormModal = ({
       distance: route?.distance || '',
       default_duration_time: baseDuration ? baseDuration.slice(0, 5) : '',
       operator_id: String(route?.operator_id || ''),
+      price: route?.price || '',
     });
   }, [isOpen, route, mode]);
 
@@ -87,10 +89,15 @@ const RouteFormModal = ({
     e.preventDefault();
     setError('');
 
-    const { departure_station_id, arrival_station_id, distance, default_duration_time, operator_id } = formData;
+    const { departure_station_id, arrival_station_id, distance, default_duration_time, operator_id, price } = formData;
 
     if (!departure_station_id || !arrival_station_id || !distance || !default_duration_time || !operator_id) {
       setError('Please fill in all required fields.');
+      return;
+    }
+
+    if (price && (Number.isNaN(Number(price)) || Number(price) < 0)) {
+      setError('Price must be a valid positive number.');
       return;
     }
 
@@ -116,6 +123,10 @@ const RouteFormModal = ({
       default_duration_time: normalizedDuration,
       operator_id: operator_id,
     };
+
+    if (price) {
+      payload.price = Number(price);
+    }
 
     setSubmitting(true);
     try {
@@ -470,6 +481,78 @@ const RouteFormModal = ({
                     }}>⏱️ Format: HH:MM (e.g. 02:30)</small>
                   </div>
                 </div>
+              </div>
+            </div>
+
+            {/* Price Section */}
+            <div style={{ marginBottom: '28px' }}>
+              <div style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: '8px', 
+                marginBottom: '16px',
+                paddingBottom: '12px',
+                borderBottom: '2px solid #f0f0f0'
+              }}>
+                <span style={{ fontSize: '20px' }}>💰</span>
+                <h4 style={{ margin: 0, fontSize: '16px', fontWeight: 700, color: '#333' }}>Pricing</h4>
+              </div>
+              <div className="form-group" style={{ marginBottom: 0 }}>
+                <label htmlFor="price" style={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: '6px',
+                  marginBottom: '10px',
+                  fontSize: '13px',
+                  fontWeight: 600,
+                  color: '#555'
+                }}>
+                  <span style={{ fontSize: '16px' }}>💵</span>
+                  Base Price (VND)
+                  <span style={{ 
+                    fontSize: '11px',
+                    color: '#999',
+                    fontWeight: 400,
+                    fontStyle: 'italic'
+                  }}>(Optional)</span>
+                </label>
+                <div style={{ position: 'relative' }}>
+                  <input
+                    id="price"
+                    name="price"
+                    type="number"
+                    min="0"
+                    step="1000"
+                    value={formData.price}
+                    onChange={handleChange}
+                    disabled={submitting}
+                    className="table-input"
+                    placeholder="e.g. 150000"
+                    style={{ 
+                      height: '48px',
+                      paddingLeft: '12px',
+                      fontSize: '15px',
+                      borderRadius: '10px',
+                      border: '2px solid #e0e0e0',
+                      transition: 'all 0.2s'
+                    }}
+                  />
+                  <span style={{ 
+                    position: 'absolute', 
+                    right: '12px', 
+                    top: '50%', 
+                    transform: 'translateY(-50%)',
+                    color: 'var(--futa-orange)',
+                    fontSize: '14px',
+                    fontWeight: 600
+                  }}>₫</span>
+                </div>
+                <small style={{ 
+                  display: 'block',
+                  marginTop: '6px',
+                  color: '#999',
+                  fontSize: '12px'
+                }}>💡 Base fare for this route (creates/updates fare entry)</small>
               </div>
             </div>
 

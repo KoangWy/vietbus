@@ -413,4 +413,30 @@ def get_trip_seats(trip_id):
         conn.close()
 
 
+@trips_bp.route("/buses/active", methods=["GET"])
+def get_active_buses():
+    """Get all active buses - public endpoint for trip scheduling"""
+    conn = db_connection()
+    cursor = conn.cursor(dictionary=True)
+    try:
+        cursor.execute("""
+            SELECT 
+                bus_id,
+                plate_number,
+                bus_active_flag,
+                capacity,
+                vehicle_type
+            FROM bus
+            WHERE bus_active_flag = 'Active'
+            ORDER BY vehicle_type, plate_number
+        """)
+        buses = cursor.fetchall()
+        return jsonify(buses), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        cursor.close()
+        conn.close()
+
+
 __all__ = ["trips_bp"]

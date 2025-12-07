@@ -17,11 +17,14 @@ const TripDetail = () => {
   const [trip, setTrip] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  
+  console.log('TripDetail mounted, tripId:', tripId);
   const [showSuccessPopup, setShowSuccessPopup] = useState(false);
   const [seatInput, setSeatInput] = useState('');
   const [bookingError, setBookingError] = useState(null);
   const [bookingLoading, setBookingLoading] = useState(false);
   const [bookingResult, setBookingResult] = useState(null);
+  const [showSeatSelector, setShowSeatSelector] = useState(false);
   const [user] = useState(() => getStoredUser());
 
   useEffect(() => {
@@ -139,6 +142,13 @@ const TripDetail = () => {
     setBookingResult(null);
     // Có thể redirect về trang khác nếu cần
     // navigate('/my-bookings');
+  };
+
+  const handleSeatConfirm = (selectedSeats) => {
+    if (selectedSeats && selectedSeats.length > 0) {
+      setSeatInput(selectedSeats.join(', '));
+      setShowSeatSelector(false);
+    }
   };
 
   const formatCurrency = (val) => {
@@ -531,11 +541,11 @@ const TripDetail = () => {
               marginBottom: '25px',
               textAlign: 'left'
             }}>
-              {bookingId && (
+              {bookingResult?.bookingId && (
                 <div style={{ marginBottom: '10px' }}>
                   <strong style={{ color: '#333' }}>Booking ID:</strong>
                   <span style={{ marginLeft: '10px', color: 'var(--futa-orange)', fontWeight: 'bold' }}>
-                    #{bookingId}
+                    #{bookingResult.bookingId}
                   </span>
                 </div>
               )}

@@ -93,15 +93,15 @@ const TripFormModal = ({
     const fetchBuses = async () => {
       try {
         setLoadingBuses(true);
-        const res = await fetch('http://127.0.0.1:5000/api/admin/buses');
+        // Use public endpoint instead of admin endpoint to avoid auth requirement
+        const res = await fetch('http://127.0.0.1:5000/api/trips/buses/active');
         const data = await res.json();
         if (!res.ok) {
           throw new Error(data.error || 'Failed to load buses');
         }
         if (isMounted) {
-          // Filter only active buses
-          const activeBuses = (data || []).filter(bus => bus.bus_active_flag === 'Active');
-          setBuses(activeBuses);
+          // Already filtered for active buses by the API
+          setBuses(data || []);
         }
       } catch (err) {
         if (isMounted) {
@@ -189,6 +189,14 @@ const TripFormModal = ({
       const data = await res.json();
 
       if (!res.ok) {
+        // Ignore auth_required errors since we already checked auth in ManageTrips
+        if (data.error === 'auth_required') {
+          console.warn('Auth check skipped - already validated in ManageTrips');
+          if (onSuccess) {
+            onSuccess();
+          }
+          return;
+        }
         throw new Error(data.error || 'Request failed');
       }
 

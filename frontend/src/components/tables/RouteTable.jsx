@@ -44,6 +44,14 @@ const RouteTable = ({ onAdd, onEdit, onDelete, onViewDetail, refreshToken = 0, o
         return `${hours}h ${minutes}m`;
     };
 
+    const formatPrice = (price) => {
+        if (!price || price === 0) return 'N/A';
+        return new Intl.NumberFormat('vi-VN', { 
+            style: 'currency', 
+            currency: 'VND' 
+        }).format(price);
+    };
+
     const filteredRoutes = routes.filter(route => {
         const matchesSearch = 
             route.departure_city.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -119,6 +127,7 @@ const RouteTable = ({ onAdd, onEdit, onDelete, onViewDetail, refreshToken = 0, o
                                 <th className="table-header">Arrival</th>
                                 <th className="table-header">Distance</th>
                                 <th className="table-header">Duration</th>
+                                <th className="table-header">Price</th>
                                 <th className="table-header">Operator</th>
                                 <th className="table-header">Actions</th>
                             </tr>
@@ -126,7 +135,7 @@ const RouteTable = ({ onAdd, onEdit, onDelete, onViewDetail, refreshToken = 0, o
                         <tbody>
                             {filteredRoutes.length === 0 ? (
                                 <tr>
-                                    <td colSpan="7" className="table-empty">No routes found</td>
+                                    <td colSpan="8" className="table-empty">No routes found</td>
                                 </tr>
                             ) : (
                                 filteredRoutes.map(route => (
@@ -148,6 +157,9 @@ const RouteTable = ({ onAdd, onEdit, onDelete, onViewDetail, refreshToken = 0, o
                                         </td>
                                         <td className="table-cell">{route.distance} km</td>
                                         <td className="table-cell">{formatDuration(route.default_duration_time)}</td>
+                                        <td className="table-cell">
+                                            <strong style={{ color: 'var(--futa-orange)' }}>{formatPrice(route.price)}</strong>
+                                        </td>
                                         <td className="table-cell">
                                             <span className="operator-pill">{route.operator_name}</span>
                                         </td>

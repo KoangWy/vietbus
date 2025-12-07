@@ -78,7 +78,11 @@ const Header = () => {
       </ul>
       {user ? (
         <div className="user-menu">
-          <div className="user-info">
+          <div 
+            className="user-info"
+            onClick={() => navigate('/profile')}
+            style={{ cursor: 'pointer' }}
+          >
             <FiUser className="user-icon" />
             <span className="user-name">Hi, {user.name}</span>
           </div>
