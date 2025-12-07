@@ -136,7 +136,8 @@ def login():
                 "name": user_info['name'],
                 "role": mapped_role,
                 "id": user_info['id'],
-                "accountId": account_id
+                "accountId": account_id,
+                "account_id": account_id  # Add for consistency
             },
             "token": token
         }), 200

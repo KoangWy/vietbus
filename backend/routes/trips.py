@@ -325,6 +325,41 @@ def delete_trip(trip_id):
         conn.close()
 
 
+@trips_bp.route("/<int:trip_id>/booked-seats", methods=["GET"])
+def get_booked_seats(trip_id):
+    """Get booked seats for a trip - simple endpoint for seat selector"""
+    conn = db_connection()
+    cursor = conn.cursor(dictionary=True)
+    try:
+        # Check if trip exists
+        cursor.execute("SELECT trip_id FROM trip WHERE trip_id = %s", (trip_id,))
+        if cursor.rowcount == 0:
+            return jsonify({"error": "Trip not found"}), 404
+        
+        # Get booked seats
+        cursor.execute(
+            """
+            SELECT seat_code 
+            FROM ticket 
+            WHERE trip_id = %s AND ticket_status IN ('Issued', 'Used')
+            ORDER BY seat_code
+        """,
+            (trip_id,),
+        )
+        booked_seats = [row["seat_code"] for row in cursor.fetchall()]
+        
+        return jsonify({
+            "trip_id": trip_id,
+            "booked_seats": booked_seats
+        }), 200
+        
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        cursor.close()
+        conn.close()
+
+
 @trips_bp.route("/<int:trip_id>/seats", methods=["GET"])
 def get_trip_seats(trip_id):
     """Get available seats for a trip"""
@@ -356,7 +391,7 @@ def get_trip_seats(trip_id):
             """
             SELECT seat_code 
             FROM ticket 
-            WHERE trip_id = %s AND ticket_status = 'Issued'
+            WHERE trip_id = %s AND ticket_status IN ('Issued', 'Used')
             ORDER BY seat_code
         """,
             (trip_id,),

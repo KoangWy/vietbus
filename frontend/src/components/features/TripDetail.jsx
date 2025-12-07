@@ -2,11 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import Header from '../layout/Header';
 import Footer from '../layout/Footer';
+import SeatSelector from './SeatSelector';
 import { FiNavigation, FiClock, FiCalendar, FiTruck } from 'react-icons/fi';
 import { getStoredUser, getAuthHeaders } from '../../utils/auth';
 import layoutImg from '../../../assets/images/layout.jpg';
 
 const API_BASE_URL = 'http://127.0.0.1:5000/api/schedule';
+const BOOKING_API_URL = 'http://127.0.0.1:5000/api/bookings';
 
 const TripDetail = () => {
   const { tripId } = useParams();
@@ -529,6 +531,14 @@ const TripDetail = () => {
               marginBottom: '25px',
               textAlign: 'left'
             }}>
+              {bookingId && (
+                <div style={{ marginBottom: '10px' }}>
+                  <strong style={{ color: '#333' }}>Booking ID:</strong>
+                  <span style={{ marginLeft: '10px', color: 'var(--futa-orange)', fontWeight: 'bold' }}>
+                    #{bookingId}
+                  </span>
+                </div>
+              )}
               <div style={{ marginBottom: '10px' }}>
                 <strong style={{ color: '#333' }}>Trip Code:</strong>
                 <span style={{ marginLeft: '10px', color: '#666' }}>#{trip.trip_id}</span>
@@ -586,6 +596,15 @@ const TripDetail = () => {
             </button>
           </div>
         </div>
+      )}
+
+      {/* Seat Selector Modal */}
+      {showSeatSelector && (
+        <SeatSelector
+          trip={trip}
+          onClose={() => setShowSeatSelector(false)}
+          onConfirm={handleSeatConfirm}
+        />
       )}
     </>
   );
