@@ -3,7 +3,7 @@ import DataTable from "../components/DataTable";
 import UniversalCRUDModal from "../components/UniversalCRUDModal";
 import { getAuthHeaders } from "../utils/auth";
 
-const API = "http://127.0.0.1:5000/api/admin";
+const API = "http://127.0.0.1:9000/api/admin";
 
 export default function Page2() {
   const [routes, setRoutes] = useState([]);

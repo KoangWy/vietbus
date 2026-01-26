@@ -7,7 +7,7 @@ export default function AccountDetailModal({
   open,
   type, // 'passenger' | 'staff'
   id, // passenger_id hoặc staff_id
-  apiBase, // ví dụ: "http://localhost:5000/admin"
+  apiBase, // ví dụ: "http://localhost:9000/admin"
   authHeaders,
   onClose,
 }) {

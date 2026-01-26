@@ -20,7 +20,7 @@ export default function AdminLogin() {
     e.preventDefault();
     setLoading(true);
     try {
-      const res = await fetch("http://127.0.0.1:5000/api/login", {
+      const res = await fetch("http://127.0.0.1:9000/api/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password, role: "admin" }),

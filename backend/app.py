@@ -10,4 +10,6 @@ from factory import create_app, DefaultConfig
 app = create_app(DefaultConfig)
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    #app.run(debug=True)
+    # add host = 0.0.0.0 to be accessible from outside the container
+    app.run(host="0.0.0.0", port=9000, debug=True)

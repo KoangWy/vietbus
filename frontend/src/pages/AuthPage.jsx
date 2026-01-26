@@ -59,7 +59,7 @@ export default function AuthPage() {
     
     // Endpoint API
     const endpoint = isLogin ? '/api/login' : '/api/register';
-    const API_URL = `http://127.0.0.1:5000${endpoint}`;
+    const API_URL = `http://127.0.0.1:9000${endpoint}`;
 
     // Chuẩn bị dữ liệu
     const payload = isLogin 
