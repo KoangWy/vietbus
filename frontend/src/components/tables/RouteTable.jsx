@@ -15,7 +15,7 @@ const RouteTable = ({ onAdd, onEdit, onDelete, onViewDetail, refreshToken = 0, o
     const fetchRoutes = async () => {
         try {
             setLoading(true);
-            const response = await fetch('http://127.0.0.1:5000/api/routes');
+            const response = await fetch('http://127.0.0.1:9000/api/routes');
             const data = await response.json();
             
             if (!response.ok) {

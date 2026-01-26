@@ -7,8 +7,8 @@ import { FiNavigation, FiClock, FiCalendar, FiTruck } from 'react-icons/fi';
 import { getStoredUser, getAuthHeaders } from '../../utils/auth';
 import layoutImg from '../../../assets/images/layout.jpg';
 
-const API_BASE_URL = 'http://127.0.0.1:5000/api/schedule';
-const BOOKING_API_URL = 'http://127.0.0.1:5000/api/bookings';
+const API_BASE_URL = 'http://127.0.0.1:9000/api/schedule';
+const BOOKING_API_URL = 'http://127.0.0.1:9000/api/bookings';
 
 const TripDetail = () => {
   const { tripId } = useParams();

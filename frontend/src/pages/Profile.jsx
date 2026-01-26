@@ -26,7 +26,7 @@ const Profile = () => {
       const accountId = userData.accountId;
 
       // Fetch user profile data
-      fetch(`http://127.0.0.1:5000/api/profile/${accountId}`)
+      fetch(`http://127.0.0.1:9000/api/profile/${accountId}`)
         .then(response => response.json())
         .then(data => {
           if (data.success) {
@@ -43,7 +43,7 @@ const Profile = () => {
         });
 
       // Fetch user tickets
-      fetch(`http://127.0.0.1:5000/api/profile/${accountId}/tickets`)
+      fetch(`http://127.0.0.1:9000/api/profile/${accountId}/tickets`)
         .then(response => response.json())
         .then(data => {
           if (data.success) {
