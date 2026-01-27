@@ -2,8 +2,9 @@ import React, { useEffect, useMemo, useState } from "react";
 import DataTable from "../components/DataTable";
 import UniversalCRUDModal from "../components/UniversalCRUDModal";
 import { getAuthHeaders } from "../utils/auth";
+import { apiUrl } from "../utils/api";
 
-const API = "http://127.0.0.1:9000/api/admin";
+const API = apiUrl("/api/admin");
 
 export default function Page2() {
   const [routes, setRoutes] = useState([]);

@@ -4,8 +4,9 @@ import Footer from '../components/layout/Footer';
 import TripCard from '../components/features/TripCard';
 import ScheduleSearchBar from '../components/features/ScheduleSearchBar';
 import '../App.css';
+import { apiUrl } from '../utils/api';
 
-const API_BASE_URL = 'http://127.0.0.1:9000/api/schedule';
+const API_BASE_URL = apiUrl('/api/schedule');
 
 export default function SchedulePage() {
     const initialDate = useMemo(() => new Date().toISOString().split('T')[0], []);

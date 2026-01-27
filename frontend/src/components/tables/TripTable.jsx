@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { FiEdit2, FiTrash2, FiEye, FiPlus, FiCalendar, FiClock } from 'react-icons/fi';
+import { apiUrl } from '../../utils/api';
 
 const TripTable = ({ onAdd, onEdit, onDelete, onViewDetail, refreshToken = 0 }) => {
     const [trips, setTrips] = useState([]);
@@ -16,7 +17,7 @@ const TripTable = ({ onAdd, onEdit, onDelete, onViewDetail, refreshToken = 0 }) 
     const fetchTrips = async () => {
         try {
             setLoading(true);
-            const response = await fetch('http://127.0.0.1:9000/api/trips');
+            const response = await fetch(apiUrl('/api/trips'));
             const data = await response.json();
             
             if (!response.ok) {

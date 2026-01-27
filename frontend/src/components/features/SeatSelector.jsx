@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { FiX } from 'react-icons/fi';
+import { apiUrl } from '../../utils/api';
 
 const SeatSelector = ({ trip, onClose, onConfirm }) => {
   const [selectedSeats, setSelectedSeats] = useState([]);
@@ -68,7 +69,7 @@ const SeatSelector = ({ trip, onClose, onConfirm }) => {
     const fetchBookedSeats = async () => {
       try {
         setLoading(true);
-          const response = await fetch(`http://127.0.0.1:9000/api/trips/${trip.trip_id}/booked-seats`);
+          const response = await fetch(apiUrl(`/api/trips/${trip.trip_id}/booked-seats`));
         
         if (response.ok) {
           const data = await response.json();

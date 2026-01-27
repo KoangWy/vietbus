@@ -3,8 +3,9 @@ import { useLocation } from 'react-router-dom';
 import '../../App.css';
 import { FiMapPin, FiCalendar, FiRepeat } from 'react-icons/fi';
 import TripCard from './TripCard';
+import { apiUrl } from '../../utils/api';
 
-const API_BASE_URL = 'http://127.0.0.1:9000/api/schedule';
+const API_BASE_URL = apiUrl('/api/schedule');
 
 const SearchForm = () => {
   const location = useLocation();

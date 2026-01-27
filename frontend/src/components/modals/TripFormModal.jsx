@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { FiTruck, FiMapPin, FiCalendar, FiClock, FiAlertCircle, FiCheck } from 'react-icons/fi';
+import { apiUrl } from '../../utils/api';
 
 const TripFormModal = ({
   isOpen,
@@ -61,7 +62,7 @@ const TripFormModal = ({
     const fetchRoutes = async () => {
       try {
         setLoadingRoutes(true);
-        const res = await fetch('http://127.0.0.1:9000/api/routes');
+        const res = await fetch(apiUrl('/api/routes'));
         const data = await res.json();
         if (!res.ok) {
           throw new Error(data.error || 'Failed to load routes');
@@ -94,7 +95,7 @@ const TripFormModal = ({
       try {
         setLoadingBuses(true);
         // Use public endpoint instead of admin endpoint to avoid auth requirement
-        const res = await fetch('http://127.0.0.1:9000/api/trips/buses/active');
+        const res = await fetch(apiUrl('/api/trips/buses/active'));
         const data = await res.json();
         if (!res.ok) {
           throw new Error(data.error || 'Failed to load buses');
@@ -177,8 +178,8 @@ const TripFormModal = ({
     setSubmitting(true);
     try {
       const endpoint = mode === 'edit'
-        ? `http://127.0.0.1:9000/api/trips/${trip?.trip_id}`
-        : 'http://127.0.0.1:9000/api/trips';
+        ? apiUrl(`/api/trips/${trip?.trip_id}`)
+        : apiUrl('/api/trips');
       const method = mode === 'edit' ? 'PATCH' : 'POST';
 
       const res = await fetch(endpoint, {
