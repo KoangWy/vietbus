@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import Header from '../components/layout/Header';
 import Footer from '../components/layout/Footer';
+import { apiUrl } from '../utils/api';
 import '../App.css';
 
 export default function TicketLookup() {
@@ -48,7 +49,7 @@ export default function TicketLookup() {
         if (validateForm()) {
             try {
                 // Call the actual API endpoint
-                const API_URL = 'http://127.0.0.1:9000/api/tickets/lookup';
+                const API_URL = apiUrl('/api/tickets/lookup');
 
                 const response = await fetch(API_URL, {
                     method: 'POST',

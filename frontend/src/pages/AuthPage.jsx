@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../App.css';
+import { apiUrl } from '../utils/api';
 
 export default function AuthPage() {
   const navigate = useNavigate();
@@ -59,7 +60,7 @@ export default function AuthPage() {
     
     // Endpoint API
     const endpoint = isLogin ? '/api/login' : '/api/register';
-    const API_URL = `http://127.0.0.1:9000${endpoint}`;
+    const API_URL = apiUrl(endpoint);
 
     // Chuẩn bị dữ liệu
     const payload = isLogin 

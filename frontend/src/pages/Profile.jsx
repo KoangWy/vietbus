@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import Header from '../components/layout/Header';
 import Footer from '../components/layout/Footer';
 import { FiUser, FiMail, FiPhone, FiCalendar, FiCreditCard, FiFileText, FiClock } from 'react-icons/fi';
+import { apiUrl } from '../utils/api';
 
 const Profile = () => {
   const navigate = useNavigate();
@@ -26,7 +27,7 @@ const Profile = () => {
       const accountId = userData.accountId;
 
       // Fetch user profile data
-      fetch(`http://127.0.0.1:9000/api/profile/${accountId}`)
+      fetch(apiUrl(`/api/profile/${accountId}`))
         .then(response => response.json())
         .then(data => {
           if (data.success) {
@@ -43,7 +44,7 @@ const Profile = () => {
         });
 
       // Fetch user tickets
-      fetch(`http://127.0.0.1:9000/api/profile/${accountId}/tickets`)
+      fetch(apiUrl(`/api/profile/${accountId}/tickets`))
         .then(response => response.json())
         .then(data => {
           if (data.success) {

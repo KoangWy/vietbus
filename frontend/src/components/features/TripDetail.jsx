@@ -5,10 +5,11 @@ import Footer from '../layout/Footer';
 import SeatSelector from './SeatSelector';
 import { FiNavigation, FiClock, FiCalendar, FiTruck } from 'react-icons/fi';
 import { getStoredUser, getAuthHeaders } from '../../utils/auth';
+import { apiUrl } from '../../utils/api';
 import layoutImg from '../../../assets/images/layout.jpg';
 
-const API_BASE_URL = 'http://127.0.0.1:9000/api/schedule';
-const BOOKING_API_URL = 'http://127.0.0.1:9000/api/bookings';
+const API_BASE_URL = apiUrl('/api/schedule');
+const BOOKING_API_URL = apiUrl('/api/bookings');
 
 const TripDetail = () => {
   const { tripId } = useParams();

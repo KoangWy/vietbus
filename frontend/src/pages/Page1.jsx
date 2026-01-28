@@ -3,8 +3,9 @@ import DataTable from "../components/DataTable";
 import AccountDetailModal from "../components/AccountDetailModal";
 import AddOperatorModal from "../components/AddOperatorModal";
 import { getAuthHeaders } from "../utils/auth";
+import { apiUrl } from "../utils/api";
 
-const API_BASE = "http://127.0.0.1:9000/api/admin"; // hoặc của bạn
+const API_BASE = `${apiUrl("/api/admin")}`;
 
 export default function Page1() {
   const [staffs, setStaffs] = useState([]);

@@ -7,6 +7,7 @@ import TripTable from '../components/tables/TripTable';
 import { RouteDetailModal, TripDetailModal } from '../components/modals/DetailModals';
 import RouteFormModal from '../components/modals/RouteFormModal';
 import TripFormModal from '../components/modals/TripFormModal';
+import { apiUrl } from '../utils/api';
 
 const ManageTrips = () => {
   const navigate = useNavigate();
@@ -127,7 +128,7 @@ const ManageTrips = () => {
     }
 
     try {
-      const response = await fetch(`http://127.0.0.1:9000/api/trips/${trip.trip_id}`, {
+      const response = await fetch(apiUrl(`/api/trips/${trip.trip_id}`), {
         method: 'DELETE',
       });
       

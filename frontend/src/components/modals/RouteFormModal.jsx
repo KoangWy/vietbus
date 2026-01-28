@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { FiMapPin, FiTrendingUp, FiClock, FiUsers, FiAlertCircle, FiCheck } from 'react-icons/fi';
+import { apiUrl } from '../../utils/api';
 
 const RouteFormModal = ({
   isOpen,
@@ -41,7 +42,7 @@ const RouteFormModal = ({
     const fetchStations = async () => {
       try {
         setLoadingStations(true);
-        const res = await fetch('http://127.0.0.1:9000/api/schedule/stations');
+        const res = await fetch(apiUrl('/api/schedule/stations'));
         const data = await res.json();
         if (!res.ok) {
           throw new Error(data.error || 'Failed to load stations');
@@ -131,8 +132,8 @@ const RouteFormModal = ({
     setSubmitting(true);
     try {
       const endpoint = mode === 'edit'
-        ? `http://127.0.0.1:9000/api/routes/${route?.route_id}`
-        : 'http://127.0.0.1:9000/api/routes';
+        ? apiUrl(`/api/routes/${route?.route_id}`)
+        : apiUrl('/api/routes');
       const method = mode === 'edit' ? 'PATCH' : 'POST';
 
       const res = await fetch(endpoint, {
