@@ -16,6 +16,8 @@ from routes.trips import trips_bp
 from routes.booking import booking_bp
 from routes.profile import profile_bp
 
+from utils.database import db_connection
+
 class DefaultConfig:
     JSON_SORT_KEYS = False
     PROPAGATE_EXCEPTIONS = False
@@ -57,7 +59,16 @@ def create_app(config_object: object | None = None) -> Flask:
 
     @app.route("/health", methods=["GET"])
     def health():
-        return jsonify({"status": "ok"})
+        try:
+            # create a lightweight query to check database connectivity
+            cnx = db_connection()
+            cursor = cnx.cursor()
+            cursor.execute("SELECT 1")
+            cursor.close()
+            cnx.close()
+            return jsonify({"status": "ok", "db": "connected"})
+        except Exception as e:
+            return jsonify({"status": "error", "message": str(e)}), 500
 
     return app
 
