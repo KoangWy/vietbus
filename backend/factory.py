@@ -64,6 +64,7 @@ def create_app(config_object: object | None = None) -> Flask:
             cnx = db_connection()
             cursor = cnx.cursor()
             cursor.execute("SELECT 1")
+            cursor.fetchone()
             cursor.close()
             cnx.close()
             return jsonify({"status": "ok", "db": "connected"})
