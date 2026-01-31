@@ -137,6 +137,25 @@ export default function AuthPage() {
             </button>
           </div>
 
+          {!isLogin && (
+            <div style={{
+              backgroundColor: '#fff3cd',
+              border: '1px solid #ffc107',
+              borderRadius: '8px',
+              padding: '12px 16px',
+              margin: '16px 0',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px'
+            }}>
+              <span style={{ fontSize: '20px', color: '#856404' }}>⚠️</span>
+              <div style={{ fontSize: '14px', color: '#856404', lineHeight: '1.5' }}>
+                <strong>Warning:</strong> This is a demo system. Please do not enter real personal information 
+                (real ID numbers, real phone numbers, or sensitive data).
+              </div>
+            </div>
+          )}
+
           <form onSubmit={handleSubmit} className="auth-form">
             {!isLogin && (
                 <>
@@ -145,7 +164,7 @@ export default function AuthPage() {
                         <input 
                             name="full_name" 
                             type="text" 
-                            placeholder="Ex: Nguyen Xuan Dat" 
+                            placeholder="Ex: Nguyen Van A" 
                             onChange={handleChange} 
                         />
                         {errors.full_name && <span className="error">{errors.full_name}</span>}
