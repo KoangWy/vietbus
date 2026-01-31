@@ -1,6 +1,6 @@
 # VietBus - Bus Booking System
 
-A full-stack web application for managing inter-city bus ticket reservations, built with React, Flask, and MySQL. Designed as a demonstration system for recruitment purposes.
+A full-stack web application for managing inter-city bus ticket reservations, built with React, Flask, and MySQL. Designed as a demonstration system for assignment and recruitment purposes.
 
 ---
 
