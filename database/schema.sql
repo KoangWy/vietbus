@@ -1,3 +1,5 @@
+DROP DATABASE IF EXISTS defaultdb;
+CREATE DATABASE defaultdb;
 USE defaultdb;
 
 CREATE TABLE operator (
@@ -354,8 +356,6 @@ END$$
 DELIMITER ;
 
 
-DELIMITER $$
-
 /* =========================================================
    1. TẠO ACCOUNT + PERSON + PASSENGER (ĐĂNG KÝ KHÁCH)
    - Tạo account (email/phone unique)
@@ -371,6 +371,7 @@ CREATE PROCEDURE sp_create_passenger_account (
     IN  p_gov_id      VARCHAR(50),
     IN  p_email       VARCHAR(256),
     IN  p_phone       VARCHAR(20),
+    IN  p_password    VARCHAR(256),
     OUT o_passenger_id INT
 )
 BEGIN
@@ -389,8 +390,8 @@ BEGIN
 
     START TRANSACTION;
 
-    INSERT INTO account (email, phone, stat, create_at)
-    VALUES (p_email, p_phone, 'Active', NOW());
+    INSERT INTO account (email, phone, stat, create_at, acc_password)
+    VALUES (p_email, p_phone, 'Active', NOW(), p_password);
     SET v_account_id = LAST_INSERT_ID();
 
     INSERT INTO person (person_name, date_of_birth, gov_id_num, account_id)
@@ -423,6 +424,7 @@ CREATE PROCEDURE sp_create_staff_account (
     IN  p_gov_id       VARCHAR(50),
     IN  p_email        VARCHAR(256),
     IN  p_phone        VARCHAR(20),
+    IN  p_password     VARCHAR(256),
     IN  p_hire_date    DATE,
     IN  p_operator_id  VARCHAR(10),
     OUT o_staff_id     INT
@@ -453,8 +455,8 @@ BEGIN
 
     START TRANSACTION;
 
-    INSERT INTO account (email, phone, stat, create_at)
-    VALUES (p_email, p_phone, 'Active', NOW());
+    INSERT INTO account (email, phone, stat, create_at, acc_password)
+    VALUES (p_email, p_phone, 'Active', NOW(), p_password);
     SET v_account_id = LAST_INSERT_ID();
 
     INSERT INTO person (person_name, date_of_birth, gov_id_num, account_id)
@@ -735,7 +737,7 @@ END$$
 DELIMITER ;
 
 -- thêm logic chỉnh status của trip mỗi phút
-SET GLOBAL event_scheduler = ON;
+-- SET GLOBAL event_scheduler = ON;
 DELIMITER $$
 DROP EVENT IF EXISTS ev_auto_update_trip_status$$
 CREATE EVENT ev_auto_update_trip_status
