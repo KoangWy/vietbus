@@ -6,8 +6,12 @@ Run with: `python backend/app.py` from project root.
 """
 
 from factory import create_app, DefaultConfig
+from seed_trips import init_scheduler
 
 app = create_app(DefaultConfig)
+
+# Initialize the automated trip generation scheduler
+init_scheduler(app)
 
 if __name__ == "__main__":
     #app.run(debug=True)

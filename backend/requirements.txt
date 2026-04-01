@@ -3,3 +3,4 @@ mysql-connector-python
 python-dotenv
 flask-cors  # used for CORS
 PyJWT
+APScheduler
