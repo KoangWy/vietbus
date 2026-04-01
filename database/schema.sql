@@ -119,7 +119,7 @@ CREATE TABLE routetrip (
 CREATE TABLE trip (
     trip_id INT AUTO_INCREMENT,
     trip_status VARCHAR(256) NOT NULL CHECK (trip_status IN ('Scheduled', 'Departed', 'Arrived', 'Cancelled')),
-    service_date date NOT NULL,
+    service_date DATETIME NOT NULL,
     -- khai báo thiếu
     -- THÊM DÒNG NÀY VÀO
     arrival_datetime DATETIME, 
