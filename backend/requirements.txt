@@ -4,3 +4,4 @@ python-dotenv
 flask-cors  # used for CORS
 PyJWT
 APScheduler
+bcrypt

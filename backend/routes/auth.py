@@ -2,6 +2,7 @@ from flask import Blueprint, request, jsonify
 from utils.database import db_connection
 import datetime
 from utils.jwt_helper import generate_token
+import bcrypt
 
 auth_bp = Blueprint("auth", __name__)
 
@@ -27,6 +28,8 @@ def register():
     gov_id = data.get("gov_id")
     dob = data.get("dob")
 
+    hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8') if password else None
+
     conn = None
     cursor = None
     try:
@@ -34,7 +37,7 @@ def register():
         cursor = conn.cursor()
 
         if role == "PASSENGER":
-            args = [full_name, dob, gov_id, email, phone, password, 0]
+            args = [full_name, dob, gov_id, email, phone, hashed_password, 0]
             result_args = cursor.callproc('sp_create_passenger_account', args)
             new_id = result_args[6]
 
@@ -45,7 +48,7 @@ def register():
              hire_date = data.get("hire_date", datetime.date.today())
              operator_id = data.get("operator_id", "OP001")
 
-             args = [full_name, dob, gov_id, email, phone, password, hire_date, operator_id, 0]
+             args = [full_name, dob, gov_id, email, phone, hashed_password, hire_date, operator_id, 0]
              result_args = cursor.callproc('sp_create_staff_account', args)
              new_id = result_args[8]
 
@@ -78,12 +81,27 @@ def login():
         cursor = conn.cursor(dictionary=True)
 
         cursor.execute(
-            "SELECT * FROM account WHERE email = %s AND acc_password = %s",
-            (email, password)
+            "SELECT * FROM account WHERE email = %s",
+            (email,)
         )
         account = cursor.fetchone()
 
-        if not account:
+        if not account or not password:
+            return jsonify({"success": False, "message": "Incorrect email or password!"}), 401
+
+        is_valid = False
+        db_password = account.get('acc_password', '')
+        if db_password.startswith('$2b$') or db_password.startswith('$2a$'):
+            try:
+                if bcrypt.checkpw(password.encode('utf-8'), db_password.encode('utf-8')):
+                    is_valid = True
+            except Exception:
+                pass
+        else:
+            if db_password == password:
+                is_valid = True
+
+        if not is_valid:
             return jsonify({"success": False, "message": "Incorrect email or password!"}), 401
 
         account_id = account['account_id']
